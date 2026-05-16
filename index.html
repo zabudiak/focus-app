@@ -994,16 +994,16 @@
       <div class="card scene-card">
         <div class="scene-header">
           <div class="card-title">
-            <span class="icon">
+            <span class="icon" id="sceneIcon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2c-3 4-5 7-5 11a5 5 0 0 0 10 0c0-4-2-7-5-11z" fill="currentColor" opacity=".3"/><path d="M12 13v9"/></svg>
             </span>
-            Your Tree
+            <span id="sceneTitle">Your Tree</span>
           </div>
         </div>
         <div class="scene-stage" id="treeStage">
           <div class="tree-status" id="treeStatus">Plant a seed by starting a focus session</div>
           <div class="scene-overlay-controls">
-            <button class="iconbtn" id="newTreeBtn" title="New tree (changes species)">
+            <button class="iconbtn" id="newTreeBtn" title="Re-roll the scene">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
             </button>
           </div>
@@ -1056,7 +1056,7 @@
         </div>
         <div class="stat-cards">
           <div class="stat-row">
-            <div class="l"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-3 4-5 7-5 11a5 5 0 0 0 10 0c0-4-2-7-5-11z"/></svg> Trees today</div>
+            <div class="l"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-3 4-5 7-5 11a5 5 0 0 0 10 0c0-4-2-7-5-11z"/></svg> Grown today</div>
             <div class="v" id="stToday">0</div>
           </div>
           <div class="stat-row">
@@ -1069,7 +1069,7 @@
           </div>
           <div class="stat-row">
             <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg> All-time</div>
-            <div class="v"><span id="stAll">0</span><small>trees</small></div>
+            <div class="v"><span id="stAll">0</span><small>total</small></div>
           </div>
         </div>
         <div class="goal" id="goal">
@@ -1173,14 +1173,31 @@
         <div class="field"><div><label>Auto-start focus</label><span class="hint">Start focus automatically</span></div><button class="toggle" id="setAutoFocus"></button></div>
         <div class="field"><div><label>Completion chime</label><span class="hint">Soft bell when session ends</span></div><button class="toggle on" id="setSound"></button></div>
         <div class="field"><div><label>Desktop notifications</label><span class="hint">Notify on completion</span></div><button class="toggle on" id="setNotify"></button></div>
-        <div class="field"><div><label>Tree species</label><span class="hint">What you plant when you focus</span></div>
-          <select id="setSpecies" aria-label="Tree species">
-            <option value="auto">Auto / random</option>
-            <option value="oak">Oak</option>
-            <option value="cherry">Cherry blossom</option>
-            <option value="pine">Pine</option>
-            <option value="willow">Willow · 7-day streak</option>
-            <option value="maple">Maple · plant 25 trees</option>
+        <div class="field"><div><label>Style</label><span class="hint">What you grow when you focus</span></div>
+          <select id="setStyle" aria-label="Style">
+            <option value="auto:auto">Auto / surprise me</option>
+            <optgroup label="Trees">
+              <option value="tree:auto">Any tree</option>
+              <option value="tree:oak">Oak</option>
+              <option value="tree:cherry">Cherry blossom</option>
+              <option value="tree:pine">Pine</option>
+              <option value="tree:willow">Willow · 7-day streak</option>
+              <option value="tree:maple">Maple · plant 25 trees</option>
+            </optgroup>
+            <optgroup label="Constellations">
+              <option value="stars:auto">Any constellation</option>
+              <option value="stars:dipper">Dipper</option>
+              <option value="stars:cross">Cross</option>
+              <option value="stars:spiral">Spiral</option>
+              <option value="stars:crown">Crown</option>
+            </optgroup>
+            <optgroup label="Crystals">
+              <option value="crystals:auto">Any crystal</option>
+              <option value="crystals:quartz">Quartz</option>
+              <option value="crystals:amethyst">Amethyst</option>
+              <option value="crystals:emerald">Emerald</option>
+              <option value="crystals:citrine">Citrine</option>
+            </optgroup>
           </select>
         </div>
         <div class="field"><div><label>Reduced motion</label><span class="hint">Disable subtle animations</span></div><button class="toggle" id="setReducedMotion" aria-label="Reduced motion"></button></div>
@@ -1298,7 +1315,7 @@ const defaults = {
     focus:25, short:5, long:15, cycle:4,
     autoBreak:false, autoFocus:false,
     sound:true, notify:true,
-    species:'auto',
+    style:'tree:auto',
     volume:0.4,
     goal:120,
     askIntent:true,
@@ -1321,12 +1338,21 @@ function load(){
     const raw = localStorage.getItem(LS_KEY);
     if(!raw) return structuredClone(defaults);
     const data = JSON.parse(raw);
+    const settings = {...defaults.settings, ...(data.settings||{})};
+    // migrate v1: settings.species ('auto'|'oak'|...) -> settings.style ('tree:oak'|'auto:auto'|...)
+    if (data.settings && data.settings.species && !data.settings.style){
+      const sp = data.settings.species;
+      settings.style = (sp === 'auto') ? 'tree:auto' : ('tree:' + sp);
+    }
+    delete settings.species;
+    // migrate v1: forest items without `mode` are legacy trees
+    const forest = (data.forest||[]).map(t => ('mode' in t) ? t : {...t, mode:'tree'});
     return {
       ...structuredClone(defaults),
       ...data,
-      settings:{...defaults.settings,...(data.settings||{})},
+      settings,
       stats:{...defaults.stats,...(data.stats||{})},
-      forest:data.forest||[],
+      forest,
       tasks:data.tasks||[],
       achievements:data.achievements||{},
       daily:data.daily||{},
@@ -1358,6 +1384,7 @@ const els = {
   goal:$('#goal'), goalCur:$('#goalCur'), goalTarget:$('#goalTarget'), goalFill:$('#goalFill'),
   treeStage:$('#treeStage'), treeSvg:$('#treeSvg'), treeStatus:$('#treeStatus'),
   newTreeBtn:$('#newTreeBtn'),
+  sceneTitle:$('#sceneTitle'), sceneIcon:$('#sceneIcon'),
   taskInput:$('#taskInput'), addTaskBtn:$('#addTaskBtn'), taskList:$('#taskList'), doneToday:$('#doneToday'),
   soundsGrid:$('#soundsGrid'), vol:$('#vol'),
   stToday:$('#stToday'), stMins:$('#stMins'), stStreak:$('#stStreak'), stAll:$('#stAll'),
@@ -1373,7 +1400,7 @@ const els = {
   // settings
   setFocus:$('#setFocus'), setShort:$('#setShort'), setLong:$('#setLong'), setCycle:$('#setCycle'), setGoal:$('#setGoal'),
   setAutoBreak:$('#setAutoBreak'), setAutoFocus:$('#setAutoFocus'),
-  setSound:$('#setSound'), setNotify:$('#setNotify'), setSpecies:$('#setSpecies'),
+  setSound:$('#setSound'), setNotify:$('#setNotify'), setStyle:$('#setStyle'),
   setReducedMotion:$('#setReducedMotion'), setDayNight:$('#setDayNight'),
   setAskIntent:$('#setAskIntent'), setAskReflection:$('#setAskReflection'), setPauseGrace:$('#setPauseGrace'),
   resetAll:$('#resetAll'),
@@ -1610,11 +1637,260 @@ function renderTreeSVG(tree, growth){
   return parts.join('');
 }
 
-// Small tree (for grove tiles); uses smaller viewport
-function renderGroveTreeSVG(speciesKey, seed, dead){
-  const tree = generateTree(speciesKey, seed);
-  const svg = renderTreeSVG(tree, 1.0);
-  return svg;
+// ============== CONSTELLATIONS ==============
+const CONSTELLATIONS = {
+  dipper: {
+    name:'Dipper',
+    stars:[{x:.18,y:.55,b:1.0},{x:.30,y:.65,b:.92},{x:.45,y:.62,b:.88},{x:.55,y:.50,b:.85},{x:.70,y:.35,b:1.0},{x:.78,y:.22,b:.95},{x:.65,y:.18,b:.9}],
+    edges:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]],
+  },
+  cross: {
+    name:'Cross',
+    stars:[{x:.50,y:.18,b:1.0},{x:.50,y:.46,b:.7},{x:.50,y:.82,b:.95},{x:.28,y:.50,b:.85},{x:.72,y:.50,b:.9}],
+    edges:[[0,1],[1,2],[3,1],[1,4]],
+  },
+  spiral: (()=>{
+    const stars=[]; for(let i=0;i<9;i++){ const t=i*0.65, r=0.08+i*0.038; stars.push({x:.5+r*Math.cos(t), y:.5+r*Math.sin(t), b:0.7+(i%3===0?0.3:0)}); }
+    const edges=[]; for(let i=0;i<stars.length-1;i++) edges.push([i,i+1]);
+    return {name:'Spiral', stars, edges};
+  })(),
+  crown: (()=>{
+    const stars=[]; for(let i=0;i<6;i++){ const t=Math.PI - i*Math.PI/5; stars.push({x:.5+0.34*Math.cos(t), y:.62-0.34*Math.sin(t), b:0.82+(i===0||i===5?0.18:0)}); }
+    const edges=[]; for(let i=0;i<stars.length-1;i++) edges.push([i,i+1]);
+    return {name:'Crown', stars, edges};
+  })(),
+};
+
+const STAR_PALETTES = [
+  { core:'#fff8d4', glow:'rgba(255,200,100,.35)', line:'rgba(255,220,180,.55)' },
+  { core:'#d4e7ff', glow:'rgba(150,200,255,.38)', line:'rgba(180,210,255,.55)' },
+  { core:'#ffd966', glow:'rgba(255,180,80,.40)',  line:'rgba(255,200,120,.55)' },
+  { core:'#f0c4f0', glow:'rgba(220,160,240,.40)', line:'rgba(220,180,240,.55)' },
+];
+
+function generateConstellation(speciesKey, seed){
+  const tmpl = CONSTELLATIONS[speciesKey] || CONSTELLATIONS.dipper;
+  const R = rng(seed);
+  const stars = tmpl.stars.map(s => ({ x: s.x + (R()-.5)*0.035, y: s.y + (R()-.5)*0.035, b:s.b }));
+  const bg = [];
+  for(let i=0;i<14;i++) bg.push({x:R(), y:R()*0.92, r:0.5+R()*0.7, b:0.18+R()*0.45});
+  const palette = STAR_PALETTES[Math.floor(R()*STAR_PALETTES.length)];
+  return { species:speciesKey, stars, edges:tmpl.edges, bg, palette, seed };
+}
+
+function renderConstellationSVG(model, growth){
+  growth = Math.max(0, Math.min(1, growth));
+  const W=360, H=360, margin=46;
+  const innerW = W - margin*2, innerH = H - margin*2;
+  const parts = [];
+
+  // ambient backdrop stars
+  if(growth > 0){
+    const bgA = Math.min(1, growth*1.6);
+    for(const b of model.bg){
+      const bx = margin + b.x*innerW, by = margin + b.y*innerH;
+      parts.push(`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${b.r.toFixed(2)}" fill="#fff" opacity="${(b.b*bgA*0.55).toFixed(2)}"/>`);
+    }
+  }
+
+  if(growth < 0.05){
+    parts.push(`<circle cx="${W/2}" cy="${H/2}" r="9" fill="${model.palette.glow}"/>`);
+    parts.push(`<circle cx="${W/2}" cy="${H/2}" r="2" fill="${model.palette.core}"/>`);
+    return parts.join('');
+  }
+
+  const totalStars = model.stars.length;
+  const visible = Math.max(1, Math.ceil(totalStars * Math.min(1, growth/0.65)));
+
+  // connecting lines
+  if(growth > 0.5){
+    const lineA = Math.min(1, (growth - 0.5)/0.35);
+    for(const [a,b] of model.edges){
+      if(a>=visible || b>=visible) continue;
+      const sa = model.stars[a], sb = model.stars[b];
+      const x1 = margin + sa.x*innerW, y1 = margin + sa.y*innerH;
+      const x2 = margin + sb.x*innerW, y2 = margin + sb.y*innerH;
+      parts.push(`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${model.palette.line}" stroke-width="1" opacity="${(lineA*0.6).toFixed(2)}"/>`);
+    }
+  }
+
+  // stars
+  for(let i=0;i<visible;i++){
+    const s = model.stars[i];
+    const x = margin + s.x*innerW, y = margin + s.y*innerH;
+    const pace = 0.65 / totalStars;
+    const local = Math.max(0.25, Math.min(1, (growth - i*pace)/0.22));
+    const r = (1.4 + s.b*2.4) * local;
+    parts.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(r*5).toFixed(1)}" fill="${model.palette.glow}" opacity="${(0.55*local).toFixed(2)}"/>`);
+    parts.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(r*2.4).toFixed(1)}" fill="${model.palette.core}" opacity="${(0.5*local).toFixed(2)}"/>`);
+    parts.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${model.palette.core}"/>`);
+    if(growth > 0.85){
+      const sp = (growth - 0.85)/0.15;
+      const k = r*5;
+      parts.push(`<g stroke="${model.palette.core}" stroke-width=".7" opacity="${(sp*0.7).toFixed(2)}" stroke-linecap="round"><line x1="${(x-k).toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x+k).toFixed(1)}" y2="${y.toFixed(1)}"/><line x1="${x.toFixed(1)}" y1="${(y-k).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(y+k).toFixed(1)}"/></g>`);
+    }
+  }
+  return parts.join('');
+}
+
+// ============== CRYSTALS ==============
+const CRYSTAL_PALETTES = {
+  quartz:   { light:'#f0f6f8', main:'#b8d2dc', dark:'#506e7a', highlight:'#ffffff', sparkle:'#ffffff' },
+  amethyst: { light:'#e8d4f5', main:'#a575d1', dark:'#4a2f6d', highlight:'#f8eaff', sparkle:'#e0bfff' },
+  emerald:  { light:'#bff0d4', main:'#5aa87a', dark:'#1f5238', highlight:'#dffbe8', sparkle:'#cffadf' },
+  citrine:  { light:'#fae3b0', main:'#dca35a', dark:'#7a4d18', highlight:'#fff2ce', sparkle:'#ffdf99' },
+};
+
+let crystalGradCounter = 0;
+
+function generateCrystal(speciesKey, seed){
+  const palette = CRYSTAL_PALETTES[speciesKey] || CRYSTAL_PALETTES.quartz;
+  const R = rng(seed);
+  const cx = 180, baseY = 290;
+  const count = 3 + Math.floor(R()*3); // 3..5
+  const shards = [];
+  shards.push({ x: cx + (R()-.5)*8, h: 145 + R()*55, w: 28 + R()*10, angle: (R()-.5)*0.18 });
+  for(let i=1;i<count;i++){
+    const side = i%2===0 ? 1 : -1;
+    shards.push({ x: cx + side*(18 + R()*30), h: 60 + R()*70, w: 16 + R()*10, angle: side*(0.10 + R()*0.30) });
+  }
+  // draw shorter shards first, taller last so taller appears in front
+  shards.sort((a,b) => a.h - b.h);
+  return { species:speciesKey, shards, palette, seed, baseY };
+}
+
+function renderCrystalSVG(model, growth){
+  growth = Math.max(0, Math.min(1, growth));
+  const parts = [];
+  const baseY = model.baseY;
+  const gradId = 'cg' + (++crystalGradCounter);
+
+  parts.push(`<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${model.palette.light}"/><stop offset=".45" stop-color="${model.palette.main}"/><stop offset="1" stop-color="${model.palette.dark}"/></linearGradient></defs>`);
+  parts.push(`<ellipse cx="180" cy="${baseY+8}" rx="78" ry="5" fill="#000" opacity=".32"/>`);
+
+  if(growth < 0.05){
+    parts.push(`<polygon points="180,${baseY-9} 183,${baseY} 177,${baseY}" fill="${model.palette.main}" stroke="${model.palette.dark}" stroke-width=".5" stroke-linejoin="round"/>`);
+    return parts.join('');
+  }
+
+  model.shards.forEach((shard, idx) => {
+    const threshold = idx * 0.10;
+    if(growth < threshold) return;
+    const local = Math.min(1, (growth - threshold)/0.55);
+    const h = shard.h * local;
+    if(h < 3) return;
+    const ax = Math.sin(shard.angle), ay = -Math.cos(shard.angle);
+    const px = -ay, py = ax;
+    const halfW = shard.w/2;
+    const bx = shard.x, by = baseY;
+    const tipX = bx + ax*h, tipY = by + ay*h;
+    const blX = bx - px*halfW, blY = by - py*halfW;
+    const brX = bx + px*halfW, brY = by + py*halfW;
+    parts.push(`<polygon points="${blX.toFixed(1)},${blY.toFixed(1)} ${brX.toFixed(1)},${brY.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}" fill="url(#${gradId})" stroke="${model.palette.dark}" stroke-width=".5" stroke-linejoin="round"/>`);
+    // left-side highlight
+    parts.push(`<polygon points="${blX.toFixed(1)},${blY.toFixed(1)} ${bx.toFixed(1)},${by.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)}" fill="${model.palette.light}" opacity=".30"/>`);
+    // center facet
+    parts.push(`<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${tipX.toFixed(1)}" y2="${tipY.toFixed(1)}" stroke="${model.palette.highlight}" stroke-width="1.3" opacity=".45" stroke-linecap="round"/>`);
+  });
+
+  if(growth > 0.8){
+    const sa = (growth - 0.8)/0.2;
+    const RR = rng(model.seed + 1234);
+    for(let i=0;i<5;i++){
+      const sx = 180 + (RR()-.5)*110;
+      const sy = baseY - 30 - RR()*140;
+      const r = 1.6 + RR()*1.2;
+      parts.push(`<g opacity="${(sa*0.85).toFixed(2)}" stroke="${model.palette.sparkle}" stroke-width=".7" stroke-linecap="round" fill="none"><line x1="${(sx-r*2.5).toFixed(1)}" y1="${sy.toFixed(1)}" x2="${(sx+r*2.5).toFixed(1)}" y2="${sy.toFixed(1)}"/><line x1="${sx.toFixed(1)}" y1="${(sy-r*2.5).toFixed(1)}" x2="${sx.toFixed(1)}" y2="${(sy+r*2.5).toFixed(1)}"/></g>`);
+    }
+  }
+  return parts.join('');
+}
+
+// ============== MODES REGISTRY ==============
+const MODES = {
+  tree: {
+    id:'tree', name:'Trees',
+    species:['oak','cherry','pine','willow'],
+    speciesNames:{oak:'Oak', cherry:'Cherry blossom', pine:'Pine', willow:'Willow'},
+    sceneTitle:'Your Tree',
+    icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2c-3 4-5 7-5 11a5 5 0 0 0 10 0c0-4-2-7-5-11z" fill="currentColor" opacity=".3"/><path d="M12 13v9"/></svg>`,
+    idleMsg:'Plant a seed by starting a focus session',
+    seededMsg:'Seed planted. Keep focusing 🌱',
+    breakMsg:'Take a moment. Your grove is growing 🌿',
+    skipShortMsg:'Skipped. Not enough focus to grow a tree',
+    completeToast:'🌳 Your tree is now part of the grove',
+    completeTaskToast:'🌳 Tree planted · task complete',
+    witherToast:'🥀 Your tree withered. Start fresh anytime',
+    stageMsgs:['🌱 Seed in the soil…','🌿 A tiny sprout breaks the surface','🪴 The sapling is reaching upward','🌳 Branches stretching wide','🌳 A strong young tree','🌸 In full bloom. Almost done!'],
+    generate:(species,seed)=>generateTree(species,seed),
+    renderLarge:(m,frac)=>renderTreeSVG(m,frac),
+  },
+  stars: {
+    id:'stars', name:'Constellations',
+    species:['dipper','cross','spiral','crown'],
+    speciesNames:{dipper:'Dipper', cross:'Cross', spiral:'Spiral', crown:'Crown'},
+    sceneTitle:'Your Constellation',
+    icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l2 5.5h5.5l-4.5 3.5 2 5.8L12 14l-5 3.8 2-5.8L4.5 8.5H10z" fill="currentColor" opacity=".3"/></svg>`,
+    idleMsg:'Ignite a star by starting a focus session',
+    seededMsg:'A spark lit. Keep focusing ✨',
+    breakMsg:'Take a moment. Your sky is filling out ✨',
+    skipShortMsg:'Skipped. Not enough focus to light a constellation',
+    completeToast:'✨ A constellation joined your sky',
+    completeTaskToast:'✨ Constellation lit · task complete',
+    witherToast:'🌫 The star faded. Try again anytime',
+    stageMsgs:['✨ A faint spark glows…','✨ The first star ignites','⭐ More stars appear','⭐ The shape begins to emerge','🌌 Lines connect the stars','🌌 The constellation shines bright!'],
+    generate:(species,seed)=>generateConstellation(species,seed),
+    renderLarge:(m,frac)=>renderConstellationSVG(m,frac),
+  },
+  crystals: {
+    id:'crystals', name:'Crystals',
+    species:['quartz','amethyst','emerald','citrine'],
+    speciesNames:{quartz:'Quartz', amethyst:'Amethyst', emerald:'Emerald', citrine:'Citrine'},
+    sceneTitle:'Your Crystal',
+    icon:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 9l6-7 6 7-6 13z" fill="currentColor" opacity=".3"/><path d="M6 9h12M12 2v20"/></svg>`,
+    idleMsg:'Grow a crystal by starting a focus session',
+    seededMsg:'Seed shard formed. Keep focusing 💎',
+    breakMsg:'Take a moment. Your vault is filling up 💎',
+    skipShortMsg:'Skipped. Not enough focus to form a crystal',
+    completeToast:'💎 Your crystal joins the vault',
+    completeTaskToast:'💎 Crystal formed · task complete',
+    witherToast:'🥀 The crystal cracked. Try again anytime',
+    stageMsgs:['💎 A seed shard forms…','💎 The first facet rises','💎 More shards sprout','💎 The cluster takes shape','💎 Facets sharpen and refract','✨ The cluster gleams in full light!'],
+    generate:(species,seed)=>generateCrystal(species,seed),
+    renderLarge:(m,frac)=>renderCrystalSVG(m,frac),
+  },
+};
+
+function pickStyleNow(){
+  const sty = state.settings.style || 'auto:auto';
+  let [m,sp] = sty.split(':');
+  if(!MODES[m] || m==='auto'){
+    const keys = Object.keys(MODES);
+    m = keys[Math.floor(Math.random()*keys.length)];
+  }
+  const list = MODES[m].species;
+  if(!list.includes(sp) || sp==='auto'){
+    sp = list[Math.floor(Math.random()*list.length)];
+  }
+  return { mode:m, species:sp };
+}
+
+function renderGroveItemSVG(item){
+  const m = MODES[item.mode] ? item.mode : 'tree';
+  const M = MODES[m];
+  const species = M.species.includes(item.species) ? item.species : M.species[0];
+  const seed = item.seed || item.ts || 1;
+  const model = M.generate(species, seed);
+  return M.renderLarge(model, 1.0);
+}
+
+function stageIndex(frac){
+  if(frac<.04) return 0;
+  if(frac<.18) return 1;
+  if(frac<.40) return 2;
+  if(frac<.65) return 3;
+  if(frac<.95) return 4;
+  return 5;
 }
 
 // ============== TIMER STATE ==============
@@ -1629,14 +1905,8 @@ let sessionIntent = '';
 let pausedAt = null;        // ms timestamp when paused began
 let pausedTotal = 0;        // accumulated paused ms during this focus session
 let sessionStartedAt = null;
-function resolveSpecies(){
-  const s = state.settings.species;
-  if(s==='auto' || !speciesUnlocked(s)) return pickSpecies(Date.now());
-  return s;
-}
-let currentSpecies = resolveSpecies();
-let currentTreeSeed = Date.now();
-let currentTree = generateTree(currentSpecies, currentTreeSeed);
+const current = { mode:'tree', species:'oak', seed:Date.now(), model:null };
+regenScene();
 
 function wiltFraction(){
   const grace = (state.settings.pauseGrace||0)*1000;
@@ -1660,21 +1930,27 @@ function setMode(m){
   if(!running){
     remaining = durationFor(m);
     totalForSession = remaining;
-    render();
     els.meta.textContent = {focus:'Ready to focus', short:'Short break', long:'Long break'}[m];
     if(m==='focus'){
-      regenTree();
+      regenScene();
+      els.treeStatus.textContent = MODES[current.mode].idleMsg;
     } else {
-      els.treeStatus.textContent = 'Take a moment. Your grove is growing 🌿';
-      renderTreeIdle();
+      els.treeStatus.textContent = MODES[current.mode].breakMsg;
+      renderSceneIdle();
     }
+    render();
   }
 }
 
-function regenTree(){
-  currentSpecies = resolveSpecies();
-  currentTreeSeed = Date.now() + Math.floor(Math.random()*99999);
-  currentTree = generateTree(currentSpecies, currentTreeSeed);
+function regenScene(){
+  const pick = pickStyleNow();
+  current.mode = pick.mode;
+  current.species = pick.species;
+  current.seed = Date.now() + Math.floor(Math.random()*99999);
+  current.model = MODES[current.mode].generate(current.species, current.seed);
+  const M = MODES[current.mode];
+  if(els.sceneTitle) els.sceneTitle.textContent = M.sceneTitle;
+  if(els.sceneIcon && M.icon) els.sceneIcon.innerHTML = M.icon;
 }
 
 function formatTime(ms){
@@ -1722,7 +1998,7 @@ function render(){
     ? `${modeBadge} ${formatTime(remaining)} · Grove`
     : 'Grove · Focus';
   if(mode==='focus'){
-    renderTree(frac);
+    renderScene(frac);
   }
   renderDots();
   renderNextHint();
@@ -1759,12 +2035,12 @@ function actuallyStart(){
   setStartLabel('Pause', true);
   const fresh = remaining===totalForSession;
   if(mode==='focus' && fresh){
-    regenTree();
+    regenScene();
     sessionDistractions = 0;
     pausedAt = null;
     pausedTotal = 0;
     sessionStartedAt = Date.now();
-    els.treeStatus.textContent = 'Seed planted. Keep focusing 🌱';
+    els.treeStatus.textContent = MODES[current.mode].seededMsg;
   }
   tickHandle = setInterval(tick, 250);
   ensureNotifyPermission();
@@ -1797,9 +2073,9 @@ function reset(){
   const wasInProgress = (running || remaining<totalForSession) && remaining>0;
   if(wasInProgress && mode==='focus'){
     const minutes = Math.max(1, Math.round((totalForSession - remaining)/60000));
-    addToForest({minutes, dead:true, species:currentSpecies, seed:currentTreeSeed,
+    addToForest({minutes, dead:true,
       distractions:sessionDistractions, intent:sessionIntent, wilt:1});
-    toast('🥀 Your tree withered. Start fresh anytime');
+    toast(MODES[current.mode].witherToast);
   }
   running = false;
   clearInterval(tickHandle); tickHandle=null;
@@ -1808,8 +2084,8 @@ function reset(){
   sessionDistractions = 0; sessionIntent = ''; pausedAt=null; pausedTotal=0; sessionStartedAt=null;
   setStartLabel('Start', false);
   if(mode==='focus'){
-    regenTree();
-    els.treeStatus.textContent = 'Plant a seed by starting a focus session';
+    regenScene();
+    els.treeStatus.textContent = MODES[current.mode].idleMsg;
   }
   render();
 }
@@ -1821,7 +2097,7 @@ function skip(){
       completeFocus(minutes);
       return;
     } else {
-      toast('Skipped. Not enough focus to grow a tree');
+      toast(MODES[current.mode].skipShortMsg);
     }
   }
   running=false; clearInterval(tickHandle); tickHandle=null;
@@ -1868,12 +2144,13 @@ function completeFocus(minutes){
   }
   const wilt = wiltFraction();
   const treeRec = addToForest({
-    minutes, dead:false, species:currentSpecies, seed:currentTreeSeed,
+    minutes, dead:false,
     distractions:sessionDistractions, intent:sessionIntent, wilt,
   });
   if(taskToComplete) setTaskDone(taskToComplete, true);
-  const wiltMsg = wilt>0.4 ? '🍂 A bit wilted, but planted' : '🌳 Your tree is now part of the grove';
-  toast(taskToComplete ? '🌳 Tree planted · task complete' : wiltMsg);
+  const M = MODES[current.mode];
+  const wiltMsg = wilt>0.4 ? '🍂 A bit wilted, but planted' : M.completeToast;
+  toast(taskToComplete ? M.completeTaskToast : wiltMsg);
   renderTasks();
   checkAchievements();
   renderHeatmap();
@@ -1916,8 +2193,9 @@ function addToForest(opts){
     minutes: opts.minutes,
     label: (at && at.label) || 'Focus session',
     dead: !!opts.dead,
-    species: opts.species,
-    seed: opts.seed,
+    mode: current.mode,
+    species: current.species,
+    seed: current.seed,
     intent: opts.intent || '',
     distractions: opts.distractions || 0,
     wilt: opts.wilt || 0,
@@ -1930,23 +2208,13 @@ function addToForest(opts){
   return item;
 }
 
-function renderTree(frac){
-  let stage;
-  if(frac<.04) stage=0; else if(frac<.18) stage=1; else if(frac<.4) stage=2;
-  else if(frac<.65) stage=3; else if(frac<.95) stage=4; else stage=5;
-  els.treeSvg.innerHTML = renderTreeSVG(currentTree, frac);
+function renderScene(frac){
+  const M = MODES[current.mode];
+  els.treeSvg.innerHTML = M.renderLarge(current.model, frac);
   const wilt = wiltFraction();
   els.treeSvg.classList.toggle('wilted', wilt>0.15);
   if(running){
-    const msgs = [
-      '🌱 Seed in the soil…',
-      '🌿 A tiny sprout breaks the surface',
-      '🪴 The sapling is reaching upward',
-      '🌳 Branches stretching wide',
-      '🌳 A strong young tree',
-      '🌸 In full bloom. Almost done!'
-    ];
-    els.treeStatus.textContent = msgs[stage];
+    els.treeStatus.textContent = M.stageMsgs[stageIndex(frac)];
   } else if(mode==='focus' && pausedAt){
     const grace = (state.settings.pauseGrace||0)*1000;
     const p = pausedTotal + (Date.now()-pausedAt);
@@ -1954,24 +2222,22 @@ function renderTree(frac){
       const left = Math.ceil((grace-p)/1000);
       els.treeStatus.textContent = `⏸ Paused · ${left}s grace`;
     } else {
-      els.treeStatus.textContent = '🍂 The tree is wilting…';
+      els.treeStatus.textContent = '🍂 ' + (current.mode==='tree' ? 'The tree is wilting…' : 'Wilting…');
     }
   }
 }
-function renderTreeIdle(){
-  if(mode==='focus'){
-    els.treeSvg.innerHTML = renderTreeSVG(currentTree, 0);
-  } else {
-    els.treeSvg.innerHTML = renderTreeSVG(currentTree, 1);
-  }
+function renderSceneIdle(){
+  const M = MODES[current.mode];
+  els.treeSvg.innerHTML = M.renderLarge(current.model, mode==='focus' ? 0 : 1);
 }
 
 // ============== GROVE ==============
 function renderGrove(){
   const g = els.groveGrid; g.innerHTML='';
-  els.groveMeta.textContent = `${state.forest.filter(t=>!t.dead).length} trees · ${state.forest.length} total`;
+  const alive = state.forest.filter(t=>!t.dead).length;
+  els.groveMeta.textContent = `${alive} grown · ${state.forest.length} total`;
   if(state.forest.length===0){
-    g.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Your grove is empty. Complete a focus session to plant your first tree.</div>';
+    g.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Your grove is empty. Complete a focus session to grow your first.</div>';
     return;
   }
   state.forest.forEach(t=>{
@@ -1979,16 +2245,18 @@ function renderGrove(){
     d.className = 'grove-tree' + (t.dead?' dead':'') + ((t.wilt||0)>0.15?' wilted':'');
     if((t.wilt||0)>0.15) d.style.filter = `saturate(${1-(t.wilt*0.6).toFixed(2)}) brightness(${1-(t.wilt*0.2).toFixed(2)})`;
     const date = new Date(t.ts);
+    const M = MODES[t.mode] || MODES.tree;
+    const speciesName = (M.speciesNames && M.speciesNames[t.species]) || '';
     const rating = t.rating ? ('★'.repeat(t.rating)+'☆'.repeat(5-t.rating)) : '';
     const lines = [
-      `${escapeHTML(t.label)} · ${t.minutes}m · ${date.toLocaleDateString()}`,
+      `${escapeHTML(t.label)}${speciesName?` · ${speciesName}`:''} · ${t.minutes}m · ${date.toLocaleDateString()}`,
       t.intent ? `“${escapeHTML(t.intent)}”` : '',
       rating || '',
       t.reflection ? escapeHTML(t.reflection) : '',
       t.distractions ? `${t.distractions} distraction${t.distractions>1?'s':''}` : '',
     ].filter(Boolean).join('<br>');
     d.innerHTML = `
-      <svg viewBox="0 0 360 360" aria-hidden="true">${renderGroveTreeSVG(t.species||'oak', t.seed||t.ts, t.dead)}</svg>
+      <svg viewBox="0 0 360 360" aria-hidden="true">${renderGroveItemSVG(t)}</svg>
       <div class="tip" style="max-width:240px;white-space:normal;text-align:center">${lines}</div>
     `;
     g.appendChild(d);
@@ -2063,7 +2331,8 @@ const ACHIEVEMENTS = [
   {id:'deep', icon:'🌊', name:'Deep Dive', desc:'Complete a 50+ minute focus session', test:s=>s.forest.some(t=>!t.dead && t.minutes>=50)},
   {id:'early', icon:'🌅', name:'Early Bird', desc:'Focus before 7 AM', test:s=>s.forest.some(t=>!t.dead && new Date(t.ts).getHours()<7)},
   {id:'night', icon:'🌙', name:'Night Owl', desc:'Focus after 10 PM', test:s=>s.forest.some(t=>!t.dead && new Date(t.ts).getHours()>=22)},
-  {id:'variety', icon:'🌈', name:'Variety', desc:'Plant 3 different species', test:s=>{ const set=new Set(s.forest.filter(t=>!t.dead).map(t=>t.species)); return set.size>=3; }},
+  {id:'variety', icon:'🌈', name:'Variety', desc:'Plant 3 different species', test:s=>{ const set=new Set(s.forest.filter(t=>!t.dead).map(t=>`${t.mode||'tree'}:${t.species}`)); return set.size>=3; }},
+  {id:'multifaceted', icon:'🎨', name:'Multifaceted', desc:'Try all three styles — trees, stars, crystals', test:s=>{ const modes=new Set(s.forest.filter(t=>!t.dead).map(t=>t.mode||'tree')); return modes.has('tree') && modes.has('stars') && modes.has('crystals'); }},
   {id:'reflect', icon:'📓', name:'Mindful', desc:'Write 5 session reflections', test:s=>s.forest.filter(t=>t.reflection && t.reflection.length>0).length>=5},
   {id:'undistracted', icon:'🎯', name:'Laser Focus', desc:'Finish a session with 0 distractions', test:s=>s.forest.some(t=>!t.dead && t.distractions===0 && t.minutes>=20)},
   {id:'maple', icon:'🍁', name:'Autumn', desc:'Plant a maple', test:s=>s.forest.some(t=>!t.dead && t.species==='maple')},
@@ -2791,8 +3060,8 @@ els.skipBtn.addEventListener('click', skip);
 els.focusModeBtn.addEventListener('click', ()=>toggleFocusMode(true));
 els.focusClose.addEventListener('click', ()=>toggleFocusMode(false));
 els.newTreeBtn.addEventListener('click', ()=>{
-  if(running){ toast('Can\'t change species during an active session'); return; }
-  regenTree(); render(); renderTreeIdle();
+  if(running){ toast('Can\'t change the scene during an active session'); return; }
+  regenScene(); render(); renderSceneIdle();
 });
 els.modeSwitch.addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
@@ -2864,18 +3133,19 @@ function applySettingsToUI(){
   els.setAskIntent.classList.toggle('on', state.settings.askIntent);
   els.setAskReflection.classList.toggle('on', state.settings.askReflection);
   els.setPauseGrace.value = state.settings.pauseGrace;
-  // Mark locked species in dropdown
-  [...els.setSpecies.options].forEach(opt=>{
-    const v = opt.value;
-    if(v==='auto'){ opt.disabled = false; return; }
-    opt.disabled = !speciesUnlocked(v);
+  // Lock tree species in style dropdown that haven't been earned yet
+  [...els.setStyle.options].forEach(opt=>{
+    const [m, sp] = opt.value.split(':');
+    if(m==='tree' && sp && sp!=='auto') opt.disabled = !speciesUnlocked(sp);
+    else opt.disabled = false;
   });
-  if(els.setSpecies.options[els.setSpecies.selectedIndex] &&
-     els.setSpecies.options[els.setSpecies.selectedIndex].disabled){
-    els.setSpecies.value = 'auto';
-    state.settings.species = 'auto';
+  const styleVal = state.settings.style || 'auto:auto';
+  const styleOpt = [...els.setStyle.options].find(o=>o.value===styleVal);
+  if(styleOpt && styleOpt.disabled){
+    els.setStyle.value = 'auto:auto';
+    state.settings.style = 'auto:auto';
   } else {
-    els.setSpecies.value = state.settings.species;
+    els.setStyle.value = styleVal;
   }
   els.vol.value = Math.round(state.settings.volume*100);
 }
@@ -2922,15 +3192,16 @@ toggleBinding(els.setReducedMotion,'reducedMotion', applyReducedMotion);
 toggleBinding(els.setDayNight,'dayNight', applyDayNight);
 toggleBinding(els.setAskIntent,'askIntent');
 toggleBinding(els.setAskReflection,'askReflection');
-els.setSpecies.addEventListener('change', ()=>{
-  const v = els.setSpecies.value;
-  if(v!=='auto' && !speciesUnlocked(v)){
+els.setStyle.addEventListener('change', ()=>{
+  const v = els.setStyle.value;
+  const [m, sp] = v.split(':');
+  if(m==='tree' && sp && sp!=='auto' && !speciesUnlocked(sp)){
     toast('That species is still locked');
-    els.setSpecies.value = state.settings.species;
+    els.setStyle.value = state.settings.style || 'auto:auto';
     return;
   }
-  state.settings.species = v; save();
-  if(!running){ regenTree(); renderTreeIdle(); }
+  state.settings.style = v; save();
+  if(!running){ regenScene(); renderSceneIdle(); }
 });
 els.vol.addEventListener('input', ()=>{
   state.settings.volume = parseInt(els.vol.value,10)/100;
@@ -2988,7 +3259,6 @@ document.addEventListener('visibilitychange', ()=>{
 applyReducedMotion();
 applySettingsToUI();
 setMode('focus');
-renderTreeIdle();
 renderTasks();
 renderGrove();
 renderStats();
