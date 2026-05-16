@@ -360,6 +360,12 @@
   @media (max-width:600px){.row-2{grid-template-columns:1fr}}
 
   /* Tasks */
+  .tasks-card .card-title .done-today{
+    margin-left:auto;font-family:var(--font-body);font-weight:400;
+    font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+  .tasks-card .card-title .done-today b{color:var(--accent);font-weight:600}
   .tasks-card .add-task{
     display:flex;gap:8px;margin-bottom:10px;
   }
@@ -378,13 +384,14 @@
     transition:all .2s;
   }
   .add-task .add-btn:hover{background:rgba(155,224,179,.25)}
-  .task-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+  .task-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;padding-right:2px}
   .task-list::-webkit-scrollbar{width:6px}
   .task-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
   .task{
     display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
     background:rgba(255,255,255,.02);border:1px solid transparent;
-    cursor:pointer;transition:all .2s;font-size:13.5px;
+    cursor:pointer;transition:background .2s,border-color .2s,opacity .2s,transform .15s;
+    font-size:13.5px;position:relative;
   }
   .task:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.06)}
   .task.active{
@@ -396,7 +403,11 @@
     background:linear-gradient(180deg, transparent, var(--accent), transparent);
     border-radius:2px;
   }
-  .task{position:relative}
+  .task[draggable=true]:active{cursor:grabbing}
+  .task.dragging{opacity:.35}
+  .task.drop-before{box-shadow:inset 0 2px 0 var(--accent)}
+  .task.drop-after{box-shadow:inset 0 -2px 0 var(--accent)}
+  .task.done{opacity:.55}
   .task.done .label{text-decoration:line-through;color:var(--ink-dim)}
   .task .check{
     width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(255,255,255,.18);
@@ -405,14 +416,51 @@
   .task.done .check{background:var(--accent);border-color:var(--accent)}
   .task .check svg{width:11px;height:11px;color:#0e1f17;opacity:0}
   .task.done .check svg{opacity:1}
-  .task .label{flex:1;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .task .label{flex:1;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   .task.active .label{color:var(--ink)}
+  .task .edit-in{
+    flex:1;min-width:0;background:rgba(0,0,0,.25);border:1px solid rgba(155,224,179,.35);
+    color:var(--ink);font:inherit;font-size:13.5px;
+    padding:4px 8px;border-radius:7px;outline:none;
+  }
+  .task .trg{
+    display:flex;align-items:center;gap:1px;flex-shrink:0;
+    color:var(--ink-dim);font-size:11.5px;font-variant-numeric:tabular-nums;
+    letter-spacing:.2px;
+  }
+  .task .trg .count{
+    padding:2px 6px;border-radius:6px;min-width:34px;text-align:center;
+    transition:color .2s,background .2s;
+  }
+  .task.has-target.target-met .trg .count{color:var(--accent);background:rgba(155,224,179,.10)}
+  .task .trg button{
+    width:18px;height:18px;border-radius:5px;border:0;background:transparent;
+    color:var(--ink-faint);cursor:pointer;font-size:14px;line-height:1;
+    display:grid;place-items:center;
+    opacity:0;transition:opacity .15s,background .15s,color .15s;
+  }
+  .task:hover .trg button{opacity:1}
+  .task .trg button:hover{background:rgba(255,255,255,.08);color:var(--ink)}
+  .task .trg button:disabled{opacity:0!important;pointer-events:none}
+  .task.done .trg button{display:none}
   .task .del{
     opacity:0;background:transparent;border:0;color:var(--ink-dim);cursor:pointer;
-    padding:2px;transition:opacity .15s,color .15s;
+    padding:2px;transition:opacity .15s,color .15s;flex-shrink:0;
   }
   .task:hover .del{opacity:1}
   .task .del:hover{color:#ffc8c8}
+  .tasks-divider{
+    display:flex;align-items:center;gap:10px;
+    padding:10px 4px 2px;
+    color:var(--ink-dim);font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;
+  }
+  .tasks-divider .line{flex:1;height:1px;background:rgba(255,255,255,.06)}
+  .tasks-divider .clear-done{
+    border:0;background:transparent;color:var(--ink-dim);font:inherit;font-size:10.5px;
+    letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;padding:3px 8px;border-radius:5px;
+    transition:color .2s,background .2s;
+  }
+  .tasks-divider .clear-done:hover{color:var(--ink);background:rgba(255,255,255,.05)}
   .empty-msg{color:var(--ink-dim);font-size:13px;text-align:center;padding:14px 0;font-style:italic}
 
   /* Sounds */
@@ -940,7 +988,7 @@
             <span class="count" id="distractCount">0</span>
           </button>
         </div>
-        <div class="kbd-hint"><span class="kbd">Space</span> start/pause <span class="kbd">R</span> reset <span class="kbd">F</span> focus mode <span class="kbd">?</span> all shortcuts</div>
+        <div class="kbd-hint"><span class="kbd">Space</span> start/pause <span class="kbd">R</span> reset <span class="kbd">F</span> focus mode <span class="kbd">T</span> add task <span class="kbd">?</span> all shortcuts</div>
       </div>
 
       <div class="card scene-card">
@@ -973,6 +1021,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
           </span>
           Today's Tasks
+          <span class="done-today" id="doneToday"></span>
         </div>
         <div class="add-task">
           <input class="input" id="taskInput" type="text" maxlength="80" placeholder="What are you focusing on?" aria-label="Task name" />
@@ -1309,7 +1358,7 @@ const els = {
   goal:$('#goal'), goalCur:$('#goalCur'), goalTarget:$('#goalTarget'), goalFill:$('#goalFill'),
   treeStage:$('#treeStage'), treeSvg:$('#treeSvg'), treeStatus:$('#treeStatus'),
   newTreeBtn:$('#newTreeBtn'),
-  taskInput:$('#taskInput'), addTaskBtn:$('#addTaskBtn'), taskList:$('#taskList'),
+  taskInput:$('#taskInput'), addTaskBtn:$('#addTaskBtn'), taskList:$('#taskList'), doneToday:$('#doneToday'),
   soundsGrid:$('#soundsGrid'), vol:$('#vol'),
   stToday:$('#stToday'), stMins:$('#stMins'), stStreak:$('#stStreak'), stAll:$('#stAll'),
   heatGrid:$('#heatGrid'),
@@ -1648,9 +1697,14 @@ function renderDots(){
   els.dots.innerHTML = html;
 }
 
+function activeTask(){
+  return state.tasks.find(t=>t.id===state.activeTaskId && !t.done) || null;
+}
 function activeTaskLabel(){
-  const t = state.tasks.find(t=>t.id===state.activeTaskId && !t.done);
-  return t ? t.label : '';
+  const t = activeTask();
+  if(!t) return '';
+  if((t.target|0) > 0) return `${t.label}  ·  ${t.pomodoros||0}/${t.target} 🌱`;
+  return t.label;
 }
 
 function render(){
@@ -1801,16 +1855,26 @@ function completeFocus(minutes){
     state.stats.streak = (state.stats.lastDate===yest ? state.stats.streak+1 : 1);
     state.stats.lastDate = t;
   }
+  // credit the active task; auto-complete it when its pomodoro target is reached
+  let taskToComplete = null;
   if(state.activeTaskId){
     const task = state.tasks.find(x=>x.id===state.activeTaskId);
-    if(task){ task.pomodoros = (task.pomodoros||0)+1; }
+    if(task){
+      task.pomodoros = (task.pomodoros||0)+1;
+      if((task.target|0) > 0 && task.pomodoros >= task.target && !task.done){
+        taskToComplete = task;
+      }
+    }
   }
   const wilt = wiltFraction();
   const treeRec = addToForest({
     minutes, dead:false, species:currentSpecies, seed:currentTreeSeed,
     distractions:sessionDistractions, intent:sessionIntent, wilt,
   });
-  toast(wilt>0.4 ? '🍂 A bit wilted, but planted' : '🌳 Your tree is now part of the grove');
+  if(taskToComplete) setTaskDone(taskToComplete, true);
+  const wiltMsg = wilt>0.4 ? '🍂 A bit wilted, but planted' : '🌳 Your tree is now part of the grove';
+  toast(taskToComplete ? '🌳 Tree planted · task complete' : wiltMsg);
+  renderTasks();
   checkAchievements();
   renderHeatmap();
   renderWeek();
@@ -1845,11 +1909,12 @@ function setStartLabel(lbl, isPlaying){
 }
 
 function addToForest(opts){
+  const at = activeTask();
   const item = {
     id: Date.now()+'_'+Math.random().toString(36).slice(2,7),
     ts: Date.now(),
     minutes: opts.minutes,
-    label: activeTaskLabel() || 'Focus session',
+    label: (at && at.label) || 'Focus session',
     dead: !!opts.dead,
     species: opts.species,
     seed: opts.seed,
@@ -2033,56 +2098,203 @@ function showAchPopup(a){
 }
 
 // ============== TASKS ==============
+let dragTaskId = null;
+
+function setTaskDone(t, done){
+  t.done = !!done;
+  if(t.done){
+    t.completedTs = Date.now();
+    if(state.activeTaskId===t.id) state.activeTaskId=null;
+  } else {
+    t.completedTs = null;
+  }
+}
+
+function buildTaskRow(t){
+  const d = document.createElement('div');
+  const hasTarget = (t.target|0) > 0;
+  const pomos = t.pomodoros|0;
+  const targetMet = hasTarget && pomos >= t.target;
+  d.className = 'task'
+    + (t.done?' done':'')
+    + (t.id===state.activeTaskId && !t.done?' active':'')
+    + (hasTarget?' has-target':'')
+    + (targetMet?' target-met':'');
+  d.dataset.id = t.id;
+  if(!t.done) d.draggable = true;
+
+  const trgText = hasTarget ? `${pomos}/${t.target} 🌱`
+                            : (pomos>0 ? `${pomos} 🌱` : '🌱');
+  d.innerHTML = `
+    <div class="check" title="Mark ${t.done?'incomplete':'complete'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+    <div class="label" title="Double-click to edit">${escapeHTML(t.label)}</div>
+    <div class="trg" title="Pomodoro target">
+      <button class="dec" title="Lower target" ${t.target>0?'':'disabled'}>−</button>
+      <span class="count">${trgText}</span>
+      <button class="inc" title="Raise target">+</button>
+    </div>
+    <button class="del" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg></button>
+  `;
+
+  d.querySelector('.check').addEventListener('click', e=>{
+    e.stopPropagation();
+    setTaskDone(t, !t.done);
+    save(); renderTasks(); render();
+  });
+  d.querySelector('.del').addEventListener('click', e=>{
+    e.stopPropagation();
+    state.tasks = state.tasks.filter(x=>x.id!==t.id);
+    if(state.activeTaskId===t.id) state.activeTaskId=null;
+    save(); renderTasks(); render();
+  });
+  d.querySelector('.trg .inc').addEventListener('click', e=>{
+    e.stopPropagation();
+    t.target = Math.min(20, (t.target|0) + 1);
+    save(); renderTasks();
+  });
+  d.querySelector('.trg .dec').addEventListener('click', e=>{
+    e.stopPropagation();
+    if((t.target|0) <= 0) return;
+    t.target = Math.max(0, (t.target|0) - 1);
+    save(); renderTasks();
+  });
+
+  const labelEl = d.querySelector('.label');
+  labelEl.addEventListener('dblclick', e=>{
+    e.stopPropagation();
+    beginEditTask(t, labelEl);
+  });
+
+  d.addEventListener('click', e=>{
+    if(t.done) return;
+    if(e.target.closest('.trg') || e.target.closest('.del') || e.target.closest('.check') || e.target.closest('.edit-in')) return;
+    state.activeTaskId = (state.activeTaskId===t.id)?null:t.id;
+    save();
+    // toggle .active class in place so a follow-up dblclick on the same label still fires
+    [...els.taskList.querySelectorAll('.task')].forEach(el=>{
+      if(el.classList.contains('done')) return;
+      el.classList.toggle('active', el.dataset.id === state.activeTaskId);
+    });
+    render();
+  });
+
+  if(!t.done){
+    d.addEventListener('dragstart', e=>{
+      dragTaskId = t.id;
+      try{ e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', t.id); }catch(_){}
+      d.classList.add('dragging');
+    });
+    d.addEventListener('dragend', ()=>{
+      d.classList.remove('dragging');
+      [...els.taskList.querySelectorAll('.drop-before,.drop-after')].forEach(el=>el.classList.remove('drop-before','drop-after'));
+      dragTaskId = null;
+    });
+    d.addEventListener('dragover', e=>{
+      if(!dragTaskId || dragTaskId===t.id) return;
+      e.preventDefault();
+      try{ e.dataTransfer.dropEffect = 'move'; }catch(_){}
+      const rect = d.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height/2;
+      d.classList.toggle('drop-before', before);
+      d.classList.toggle('drop-after', !before);
+    });
+    d.addEventListener('dragleave', ()=>{
+      d.classList.remove('drop-before','drop-after');
+    });
+    d.addEventListener('drop', e=>{
+      e.preventDefault();
+      const before = d.classList.contains('drop-before');
+      d.classList.remove('drop-before','drop-after');
+      if(!dragTaskId || dragTaskId===t.id) return;
+      const from = state.tasks.findIndex(x=>x.id===dragTaskId);
+      const targetIdx = state.tasks.findIndex(x=>x.id===t.id);
+      if(from<0 || targetIdx<0) return;
+      const [item] = state.tasks.splice(from, 1);
+      let insertAt = state.tasks.findIndex(x=>x.id===t.id);
+      if(!before) insertAt += 1;
+      state.tasks.splice(insertAt, 0, item);
+      save(); renderTasks();
+    });
+  }
+
+  return d;
+}
+
+function beginEditTask(t, labelEl){
+  const input = document.createElement('input');
+  input.className = 'edit-in';
+  input.value = t.label;
+  input.maxLength = 80;
+  labelEl.replaceWith(input);
+  input.focus();
+  input.select();
+  let done = false;
+  const commit = () => {
+    if(done) return; done = true;
+    const v = input.value.trim();
+    if(v && v !== t.label){ t.label = v; save(); }
+    renderTasks(); render();
+  };
+  const cancel = () => { if(done) return; done = true; renderTasks(); };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); commit(); }
+    else if(e.key==='Escape'){ e.preventDefault(); cancel(); }
+  });
+}
+
+function clearCompletedTasks(){
+  const remaining = state.tasks.filter(t=>!t.done);
+  if(remaining.length === state.tasks.length) return;
+  state.tasks = remaining;
+  save(); renderTasks(); render();
+}
+
 function renderTasks(){
   els.taskList.innerHTML='';
   const list = state.tasks.filter(t=>!t.archived);
+  const active = list.filter(t=>!t.done);
+  const done = list.filter(t=>t.done);
+
   if(list.length===0){
     els.taskList.innerHTML = '<div class="empty-msg">Add a task to focus on</div>';
+    renderDoneTodayBadge();
     return;
   }
-  for(const t of list){
-    const d = document.createElement('div');
-    d.className = 'task' + (t.done?' done':'') + (t.id===state.activeTaskId && !t.done?' active':'');
-    let estPart = '';
-    if(t.estPomos){
-      const done = Math.min(t.pomodoros||0, t.estPomos);
-      const complete = (t.pomodoros||0) >= t.estPomos;
-      estPart = `<span class="est ${complete?'done':''}" title="${t.pomodoros||0} done of ${t.estPomos} planned">${done}/${t.estPomos}🌱</span>`;
-    } else if(t.pomodoros){
-      estPart = `<span class="est">${t.pomodoros}🌱</span>`;
-    }
-    d.innerHTML = `
-      <div class="check" role="button" aria-label="Mark task done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></div>
-      <div class="label">${escapeHTML(t.label)}</div>
-      ${estPart}
-      <button class="del" title="Delete" aria-label="Delete task"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg></button>
-    `;
-    d.querySelector('.check').addEventListener('click', e=>{
-      e.stopPropagation();
-      t.done = !t.done;
-      if(t.done && state.activeTaskId===t.id) state.activeTaskId=null;
-      save(); renderTasks(); render();
-    });
-    d.querySelector('.del').addEventListener('click', e=>{
-      e.stopPropagation();
-      state.tasks = state.tasks.filter(x=>x.id!==t.id);
-      if(state.activeTaskId===t.id) state.activeTaskId=null;
-      save(); renderTasks(); render();
-    });
-    d.addEventListener('click', ()=>{
-      if(t.done) return;
-      state.activeTaskId = (state.activeTaskId===t.id)?null:t.id;
-      save(); renderTasks(); render();
-    });
-    els.taskList.appendChild(d);
+
+  if(active.length===0){
+    const msg = document.createElement('div');
+    msg.className = 'empty-msg';
+    msg.textContent = 'All done for now. Add another or take a break 🌿';
+    els.taskList.appendChild(msg);
   }
+  active.forEach(t => els.taskList.appendChild(buildTaskRow(t)));
+
+  if(done.length > 0){
+    const div = document.createElement('div');
+    div.className = 'tasks-divider';
+    div.innerHTML = `<span>Completed · ${done.length}</span><span class="line"></span><button class="clear-done" type="button">Clear</button>`;
+    div.querySelector('.clear-done').addEventListener('click', clearCompletedTasks);
+    els.taskList.appendChild(div);
+    done.forEach(t => els.taskList.appendChild(buildTaskRow(t)));
+  }
+
+  renderDoneTodayBadge();
 }
+
+function renderDoneTodayBadge(){
+  if(!els.doneToday) return;
+  const today = todayStr();
+  const n = state.tasks.filter(t => t.done && t.completedTs && localDateStr(new Date(t.completedTs))===today).length;
+  els.doneToday.innerHTML = n>0 ? `<b>${n}</b> done today` : '';
+}
+
 function addTask(){
   const v = els.taskInput.value.trim();
   if(!v) return;
   const estVal = parseInt(els.taskEst.value, 10);
-  const estPomos = (Number.isFinite(estVal) && estVal>0) ? Math.min(20, estVal) : 0;
-  const t = { id:Date.now()+'_'+Math.random().toString(36).slice(2,6), label:v, done:false, pomodoros:0, estPomos, created:Date.now() };
+  const target = (Number.isFinite(estVal) && estVal>0) ? Math.min(20, estVal) : 0;
+  const t = { id:Date.now()+'_'+Math.random().toString(36).slice(2,6), label:v, done:false, pomodoros:0, target, created:Date.now(), completedTs:null };
   state.tasks.unshift(t);
   if(!state.activeTaskId) state.activeTaskId = t.id;
   els.taskInput.value=''; els.taskEst.value='';
@@ -2759,6 +2971,8 @@ document.addEventListener('keydown', e=>{
   else if(e.key==='1'){ if(!running) setMode('focus'); }
   else if(e.key==='2'){ if(!running) setMode('short'); }
   else if(e.key==='3'){ if(!running) setMode('long'); }
+  else if(e.key==='t' || e.key==='T'){ e.preventDefault(); els.taskInput.focus(); els.taskInput.select(); }
+  else if(e.key==='Escape' && els.focusMode.classList.contains('on')){ toggleFocusMode(false); }
 });
 
 // Page lifecycle: if hidden during a focus session, keep ticking via timestamp end
