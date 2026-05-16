@@ -1,0 +1,2090 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Grove · Focus</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23142420'/%3E%3Cpath d='M32 12c-7 7-10 13-10 19a10 10 0 0 0 20 0c0-6-3-12-10-19z' fill='%237fc89a'/%3E%3Crect x='30' y='40' width='4' height='14' rx='1' fill='%234a3424'/%3E%3C/svg%3E" />
+<style>
+  /* ============== DESIGN TOKENS ============== */
+  :root{
+    --ink:#eef3ee;
+    --ink-soft:#c0cec6;
+    --ink-dim:#7e8c83;
+    --ink-faint:#536059;
+
+    --accent:#9be0b3;
+    --accent-2:#6fbf8b;
+    --accent-glow:rgba(155,224,179,.35);
+    --warm:#e7b889;
+    --rose:#f0b9c8;
+    --sky:#a8c4eb;
+    --plum:#d2a7e6;
+    --danger:#e08585;
+
+    --card:rgba(255,255,255,0.04);
+    --card-strong:rgba(255,255,255,0.06);
+    --card-bd:rgba(255,255,255,0.08);
+    --card-bd-strong:rgba(255,255,255,0.14);
+    --ring-track:rgba(255,255,255,0.06);
+
+    --shadow-sm:0 6px 20px rgba(0,0,0,.25);
+    --shadow:0 20px 60px rgba(0,0,0,.35);
+    --shadow-lg:0 32px 80px rgba(0,0,0,.45);
+
+    --font-display:'Cormorant Garamond','EB Garamond','Iowan Old Style','Apple Garamond',Georgia,'Times New Roman',serif;
+    --font-body:'Inter','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --font-mono:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+
+  body{
+    font-family:var(--font-body);
+    color:var(--ink);
+    min-height:100vh;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    line-height:1.5;
+    font-size:14px;
+    background:#0a1612;
+  }
+
+  /* ============== ANIMATED SCENE BG ============== */
+  .scene-bg{
+    position:fixed;inset:0;z-index:-1;overflow:hidden;
+    background:
+      radial-gradient(1200px 800px at 20% -10%, var(--bg-top-1, #2d5f49) 0%, transparent 55%),
+      radial-gradient(1000px 800px at 110% 110%, var(--bg-top-2, #2a3f57) 0%, transparent 55%),
+      linear-gradient(165deg, var(--bg-1,#0f1d18), var(--bg-2,#1a2e25) 55%, #0c1a16 100%);
+    transition:background 2s ease;
+  }
+  body.mode-break .scene-bg{
+    --bg-top-1:#4a6b96; --bg-top-2:#b88a6a;
+    --bg-1:#1c2438; --bg-2:#243149;
+  }
+  body.mode-long .scene-bg{
+    --bg-top-1:#7b5a9c; --bg-top-2:#c8807a;
+    --bg-1:#1d1830; --bg-2:#2a2240;
+  }
+
+  .stars{position:absolute;inset:0;opacity:.55}
+  .star{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:twinkle 4s ease-in-out infinite}
+  @keyframes twinkle{0%,100%{opacity:.2}50%{opacity:1}}
+
+  .mountains{
+    position:absolute;left:0;right:0;bottom:-2px;height:42%;
+    pointer-events:none;
+  }
+  .mountains svg{width:100%;height:100%;display:block}
+
+  .fireflies{position:absolute;inset:0;pointer-events:none}
+  .firefly{
+    position:absolute;width:4px;height:4px;border-radius:50%;
+    background:#fff7c2;
+    box-shadow:0 0 8px 2px rgba(255,235,140,.55);
+    opacity:0;
+    animation:firefly 12s ease-in-out infinite;
+  }
+  @keyframes firefly{
+    0%,100%{opacity:0;transform:translate(0,0) scale(.6)}
+    10%{opacity:.8}
+    50%{opacity:.6;transform:translate(var(--dx,40px),var(--dy,-30px)) scale(1)}
+    90%{opacity:.4}
+  }
+  body.mode-break .firefly,body.mode-long .firefly{opacity:0!important}
+
+  .pollen{position:absolute;inset:0;pointer-events:none;opacity:.5}
+  .pollen i{
+    position:absolute;width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.6);
+    animation:drift linear infinite;
+  }
+  @keyframes drift{
+    0%{transform:translateY(110vh) translateX(0)}
+    100%{transform:translateY(-10vh) translateX(20px)}
+  }
+
+  /* ============== LAYOUT ============== */
+  .app{
+    max-width:1240px;margin:0 auto;
+    padding:clamp(18px,3vw,40px);
+    display:flex;flex-direction:column;gap:24px;
+    position:relative;z-index:1;
+  }
+
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    margin-bottom:4px;
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{
+    width:42px;height:42px;border-radius:12px;
+    background:linear-gradient(140deg,#2a4a3a,#3d6e54);
+    display:grid;place-items:center;
+    box-shadow:0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
+    position:relative;overflow:hidden;
+  }
+  .logo::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.2), transparent 50%)}
+  .logo svg{width:26px;height:26px;position:relative;z-index:1}
+  .brand .title{font-family:var(--font-display);font-size:28px;font-weight:500;letter-spacing:.5px;line-height:1}
+  .brand .sub{display:block;color:var(--ink-dim);font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;margin-top:4px}
+
+  .tabs{
+    display:flex;gap:2px;
+    background:var(--card);
+    border:1px solid var(--card-bd);
+    padding:5px;border-radius:14px;
+    backdrop-filter:blur(12px);
+  }
+  .tab{
+    border:0;background:transparent;color:var(--ink-soft);
+    padding:9px 18px;border-radius:10px;font:inherit;font-size:13px;
+    cursor:pointer;transition:color .25s ease, background .25s ease, transform .15s ease;
+    font-weight:500;letter-spacing:.2px;
+    position:relative;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{
+    background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+    color:var(--ink);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.25);
+  }
+  .tab:active{transform:scale(.97)}
+
+  /* ============== CARDS ============== */
+  .card{
+    background:var(--card);
+    border:1px solid var(--card-bd);
+    border-radius:22px;
+    padding:clamp(20px,2.6vw,30px);
+    backdrop-filter:blur(18px) saturate(150%);
+    -webkit-backdrop-filter:blur(18px) saturate(150%);
+    box-shadow:var(--shadow);
+    position:relative;
+    transition:border-color .35s ease, transform .4s cubic-bezier(.16,1,.3,1);
+  }
+  .card::before{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(180deg, rgba(255,255,255,.05), transparent 30%);
+    mask:linear-gradient(#000,#000) padding-box;
+  }
+  .card-title{
+    font-family:var(--font-display);font-size:19px;font-weight:500;letter-spacing:.4px;
+    margin-bottom:16px;display:flex;align-items:center;gap:10px;color:var(--ink);
+  }
+  .card-title .icon{
+    width:26px;height:26px;display:grid;place-items:center;border-radius:8px;
+    color:var(--accent);opacity:.9;
+    background:rgba(155,224,179,.08);
+  }
+
+  /* ============== MAIN ROW ============== */
+  .main{
+    display:grid;grid-template-columns:1.05fr .95fr;gap:24px;
+  }
+  @media (max-width:900px){.main{grid-template-columns:1fr}}
+
+  /* ===== Timer card ===== */
+  .timer-card{display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center}
+
+  .mode-switch{
+    display:flex;gap:4px;
+    background:rgba(0,0,0,.22);
+    padding:4px;border-radius:12px;
+    border:1px solid rgba(255,255,255,.04);
+  }
+  .mode-switch button{
+    border:0;background:transparent;color:var(--ink-soft);font:inherit;font-size:12.5px;
+    padding:8px 16px;border-radius:9px;cursor:pointer;transition:all .25s;letter-spacing:.3px;
+    font-weight:500;
+  }
+  .mode-switch button.active{background:rgba(255,255,255,.09);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.25)}
+  .mode-switch button:hover:not(.active){color:var(--ink)}
+
+  .ring-wrap{
+    position:relative;width:min(340px,72vw);aspect-ratio:1;
+  }
+  .ring{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring-track{fill:none;stroke:var(--ring-track);stroke-width:3}
+  .ring-prog{
+    fill:none;stroke:url(#ringGradient);stroke-width:7;
+    stroke-linecap:round;
+    transition:stroke-dashoffset .9s cubic-bezier(.4,0,.2,1);
+    filter:drop-shadow(0 0 14px var(--accent-glow));
+  }
+  .ring-pulse{
+    fill:none;stroke:var(--accent);stroke-width:1;opacity:.15;
+    animation:pulse 3.4s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:.05;r:88}50%{opacity:.22;r:96}}
+  body.running .ring-prog{filter:drop-shadow(0 0 18px var(--accent-glow))}
+
+  .ring-center{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  }
+  .time{
+    font-family:var(--font-mono);
+    font-size:clamp(54px,9vw,78px);font-weight:300;letter-spacing:1px;
+    font-variant-numeric:tabular-nums;
+    line-height:1;
+  }
+  .session-meta{color:var(--ink-dim);font-size:11.5px;letter-spacing:1.8px;text-transform:uppercase;font-weight:500}
+  .session-task{
+    color:var(--ink-soft);font-size:13.5px;max-width:240px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-style:italic;font-family:var(--font-display);
+  }
+  .next-hint{
+    color:var(--ink-faint);font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;
+    margin-top:2px;
+  }
+  .next-hint b{color:var(--ink-dim);font-weight:600}
+
+  .dots{display:flex;gap:7px;margin-top:2px}
+  .dots .d{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.12);transition:all .3s}
+  .dots .d.done{background:var(--accent);box-shadow:0 0 8px var(--accent-glow)}
+  .dots .d.current{background:var(--accent);transform:scale(1.35);box-shadow:0 0 14px var(--accent-glow);animation:dotpulse 1.6s ease-in-out infinite}
+  @keyframes dotpulse{0%,100%{box-shadow:0 0 10px var(--accent-glow)}50%{box-shadow:0 0 18px var(--accent-glow)}}
+
+  .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  button.btn{
+    appearance:none;border:0;cursor:pointer;font:inherit;
+    padding:12px 22px;border-radius:14px;font-size:13.5px;font-weight:500;
+    color:var(--ink);background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);
+    transition:all .2s ease;
+    display:inline-flex;align-items:center;gap:8px;
+    letter-spacing:.2px;
+  }
+  button.btn:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
+  button.btn:active{transform:translateY(0)}
+  button.btn.primary{
+    background:linear-gradient(135deg,var(--accent),#6ab986);
+    color:#0e1f17;font-weight:600;
+    border-color:transparent;
+    box-shadow:0 8px 24px rgba(141,214,166,.3),inset 0 1px 0 rgba(255,255,255,.3);
+    padding:13px 28px;
+  }
+  button.btn.primary:hover{box-shadow:0 14px 30px rgba(141,214,166,.42),inset 0 1px 0 rgba(255,255,255,.3)}
+  body.mode-break button.btn.primary{background:linear-gradient(135deg,var(--sky),#7ea3d3);color:#0f1a26;box-shadow:0 8px 24px rgba(168,196,235,.3),inset 0 1px 0 rgba(255,255,255,.3)}
+  body.mode-long button.btn.primary{background:linear-gradient(135deg,var(--plum),#9f7fc1);color:#1c1029;box-shadow:0 8px 24px rgba(210,167,230,.3),inset 0 1px 0 rgba(255,255,255,.3)}
+  button.btn.ghost{background:transparent;border-color:rgba(255,255,255,.1)}
+  button.btn.danger:hover{background:rgba(224,133,133,.12);border-color:rgba(224,133,133,.3);color:#ffc8c8}
+
+  .kbd-hint{
+    color:var(--ink-dim);font-size:11.5px;letter-spacing:.3px;text-align:center;
+  }
+  .kbd{
+    background:rgba(255,255,255,.06);padding:2px 7px;border-radius:5px;
+    border:1px solid rgba(255,255,255,.1);font-size:11px;
+    font-family:var(--font-mono);
+    margin:0 2px;
+  }
+
+  /* ===== Scene / Tree card ===== */
+  .scene-card{display:flex;flex-direction:column;gap:12px;padding:0;overflow:hidden}
+  .scene-card .scene-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 22px 0;
+  }
+  .scene-header .card-title{margin-bottom:0}
+  .scene-stage{
+    position:relative;flex:1;min-height:380px;
+    overflow:hidden;
+    background:linear-gradient(180deg, transparent 0%, rgba(0,0,0,.18) 100%);
+  }
+  .scene-stage svg.landscape{
+    position:absolute;inset:0;width:100%;height:100%;
+  }
+  .scene-stage .tree-mount{
+    position:absolute;left:0;right:0;bottom:0;
+    display:flex;align-items:flex-end;justify-content:center;
+    height:100%;pointer-events:none;
+  }
+  .tree-svg{
+    width:80%;max-width:360px;height:auto;display:block;
+    margin-bottom:18px;
+    transform-origin:50% 100%;
+    animation:treesway 7s ease-in-out infinite;
+    will-change:transform;
+  }
+  .tree-svg .branch{fill:none;stroke-linecap:round}
+  .tree-svg .leaf{
+    transform-box:fill-box;transform-origin:center;
+    animation:leafpop .6s cubic-bezier(.16,1.4,.3,1) both;
+  }
+  @keyframes leafpop{
+    from{opacity:0;transform:scale(.2)}
+    to{opacity:1;transform:scale(1)}
+  }
+  .tree-status{
+    position:absolute;top:14px;left:50%;transform:translateX(-50%);
+    z-index:3;font-size:12px;color:var(--ink-soft);
+    background:rgba(0,0,0,.35);padding:6px 14px;border-radius:999px;
+    border:1px solid rgba(255,255,255,.07);
+    letter-spacing:.3px;
+    backdrop-filter:blur(10px);
+    text-align:center;
+    max-width:90%;
+  }
+  .scene-overlay-controls{
+    position:absolute;top:14px;right:14px;display:flex;gap:6px;z-index:3;
+  }
+  .iconbtn{
+    width:32px;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(0,0,0,.35);color:var(--ink-soft);cursor:pointer;
+    display:grid;place-items:center;transition:all .2s;
+    backdrop-filter:blur(8px);
+  }
+  .iconbtn:hover{color:var(--ink);background:rgba(0,0,0,.5);border-color:rgba(255,255,255,.18)}
+  .iconbtn svg{width:16px;height:16px}
+
+  /* ============== SECONDARY ROW ============== */
+  .row-2{display:grid;grid-template-columns:1.1fr .9fr 1fr;gap:20px}
+  @media (max-width:1000px){.row-2{grid-template-columns:1fr 1fr}.tasks-card{grid-column:1/-1}}
+  @media (max-width:600px){.row-2{grid-template-columns:1fr}}
+
+  /* Tasks */
+  .tasks-card .add-task{
+    display:flex;gap:8px;margin-bottom:10px;
+  }
+  .input{
+    flex:1;background:rgba(0,0,0,.22);
+    border:1px solid rgba(255,255,255,.06);
+    color:var(--ink);font:inherit;font-size:13.5px;
+    padding:10px 14px;border-radius:11px;
+    outline:none;transition:all .2s;
+  }
+  .input::placeholder{color:var(--ink-dim)}
+  .input:focus{border-color:rgba(155,224,179,.4);background:rgba(0,0,0,.3)}
+  .add-task .add-btn{
+    width:38px;background:rgba(155,224,179,.15);border:1px solid rgba(155,224,179,.25);
+    color:var(--accent);border-radius:11px;cursor:pointer;display:grid;place-items:center;
+    transition:all .2s;
+  }
+  .add-task .add-btn:hover{background:rgba(155,224,179,.25)}
+  .task-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+  .task-list::-webkit-scrollbar{width:6px}
+  .task-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+  .task{
+    display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
+    background:rgba(255,255,255,.02);border:1px solid transparent;
+    cursor:pointer;transition:all .2s;font-size:13.5px;
+  }
+  .task:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.06)}
+  .task.active{
+    background:rgba(155,224,179,.10);border-color:rgba(155,224,179,.32);
+    box-shadow:inset 0 0 0 1px rgba(155,224,179,.06), 0 0 18px -8px rgba(155,224,179,.4);
+  }
+  .task.active::before{
+    content:"";position:absolute;left:0;top:14%;bottom:14%;width:2px;
+    background:linear-gradient(180deg, transparent, var(--accent), transparent);
+    border-radius:2px;
+  }
+  .task{position:relative}
+  .task.done .label{text-decoration:line-through;color:var(--ink-dim)}
+  .task .check{
+    width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(255,255,255,.18);
+    display:grid;place-items:center;flex-shrink:0;transition:all .2s;
+  }
+  .task.done .check{background:var(--accent);border-color:var(--accent)}
+  .task .check svg{width:11px;height:11px;color:#0e1f17;opacity:0}
+  .task.done .check svg{opacity:1}
+  .task .label{flex:1;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .task.active .label{color:var(--ink)}
+  .task .del{
+    opacity:0;background:transparent;border:0;color:var(--ink-dim);cursor:pointer;
+    padding:2px;transition:opacity .15s,color .15s;
+  }
+  .task:hover .del{opacity:1}
+  .task .del:hover{color:#ffc8c8}
+  .empty-msg{color:var(--ink-dim);font-size:13px;text-align:center;padding:14px 0;font-style:italic}
+
+  /* Sounds */
+  .sounds-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .sound{
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:11px;padding:11px;cursor:pointer;text-align:left;
+    color:var(--ink-soft);font:inherit;font-size:12.5px;
+    display:flex;align-items:center;gap:10px;
+    transition:all .2s;
+  }
+  .sound:hover{background:rgba(255,255,255,.06);color:var(--ink)}
+  .sound.on{
+    background:rgba(155,224,179,.1);border-color:rgba(155,224,179,.3);color:var(--ink);
+  }
+  .sound .ic{
+    width:28px;height:28px;border-radius:8px;display:grid;place-items:center;
+    background:rgba(255,255,255,.05);flex-shrink:0;
+  }
+  .sound.on .ic{background:rgba(155,224,179,.18)}
+  .sound .ic svg{width:16px;height:16px}
+  .volume-row{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .volume-row svg{color:var(--ink-dim);width:16px;height:16px;flex-shrink:0}
+  input[type=range]{
+    flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
+    background:rgba(255,255,255,.1);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;
+    box-shadow:0 0 0 4px rgba(155,224,179,.18);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border:0;border-radius:50%;background:var(--accent);cursor:pointer;
+  }
+
+  /* Stats */
+  .stat-cards{display:flex;flex-direction:column;gap:8px}
+  .stat-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 14px;border-radius:11px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  }
+  .stat-row .l{font-size:12px;color:var(--ink-dim);letter-spacing:.4px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .stat-row .l svg{width:14px;height:14px;opacity:.7}
+  .stat-row .v{font-family:var(--font-display);font-size:22px;font-weight:500;color:var(--ink)}
+  .stat-row .v small{font-size:13px;color:var(--ink-dim);margin-left:3px;font-family:var(--font-body)}
+
+  /* Daily goal */
+  .goal{
+    margin-top:12px;padding:14px;border-radius:12px;
+    background:linear-gradient(135deg, rgba(155,224,179,.07), rgba(155,224,179,.02));
+    border:1px solid rgba(155,224,179,.18);
+  }
+  .goal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-dim)}
+  .goal-head b{color:var(--accent);font-family:var(--font-mono);font-size:12px;font-weight:500;letter-spacing:.5px}
+  .goal-bar{
+    height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;
+    position:relative;
+  }
+  .goal-fill{
+    height:100%;background:linear-gradient(90deg, var(--accent-2), var(--accent));
+    border-radius:3px;width:0%;
+    transition:width .8s cubic-bezier(.16,1,.3,1);
+    box-shadow:0 0 12px var(--accent-glow);
+  }
+  .goal.complete .goal-fill{background:linear-gradient(90deg, var(--accent), #d6f5e3)}
+
+  /* Timer quick presets */
+  .presets{
+    display:flex;gap:6px;justify-content:center;flex-wrap:wrap;
+    margin-top:-4px;
+  }
+  .preset{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.06);
+    color:var(--ink-dim);font:inherit;font-size:12px;font-weight:500;
+    padding:6px 12px;border-radius:8px;cursor:pointer;
+    transition:all .2s ease;letter-spacing:.2px;
+  }
+  .preset:hover{color:var(--ink);background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12)}
+  .preset.active{
+    color:var(--accent);background:rgba(155,224,179,.10);border-color:rgba(155,224,179,.28);
+  }
+
+  /* ============== HEATMAP ============== */
+  .heat-card{padding:22px 26px}
+  .heat-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  .heat-head .card-title{margin-bottom:0}
+  .heat-legend{display:flex;align-items:center;gap:6px;color:var(--ink-dim);font-size:11px;letter-spacing:.5px}
+  .heat-legend .swatch{width:11px;height:11px;border-radius:3px}
+  .heat-grid{
+    display:grid;
+    grid-template-rows:repeat(7,1fr);
+    grid-template-columns:repeat(26,1fr);
+    grid-auto-flow:column;
+    gap:4px;
+    padding-bottom:6px;
+    max-width:100%;
+  }
+  .heat-cell{
+    aspect-ratio:1;border-radius:3px;background:rgba(255,255,255,.04);
+    position:relative;transition:transform .15s, background .25s;
+    cursor:default;
+  }
+  .heat-cell:hover{transform:scale(1.4);z-index:2}
+  .heat-cell .tip{
+    position:absolute;bottom:130%;left:50%;transform:translateX(-50%);
+    background:#1a2820;color:var(--ink);padding:5px 9px;border-radius:6px;
+    font-size:11px;white-space:nowrap;
+    border:1px solid rgba(255,255,255,.08);
+    opacity:0;pointer-events:none;transition:opacity .15s;z-index:5;
+  }
+  .heat-cell:hover .tip{opacity:1}
+
+  /* ============== ACHIEVEMENTS ============== */
+  .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+  .ach{
+    padding:14px;border-radius:14px;
+    background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);
+    display:flex;gap:12px;align-items:center;
+    transition:all .3s;
+    position:relative;overflow:hidden;
+  }
+  .ach.unlocked{
+    background:linear-gradient(135deg, rgba(155,224,179,.12), rgba(155,224,179,.04));
+    border-color:rgba(155,224,179,.28);
+  }
+  .ach.unlocked::before{
+    content:"";position:absolute;top:-30%;right:-30%;width:80%;height:140%;
+    background:radial-gradient(circle, rgba(155,224,179,.16), transparent 60%);
+  }
+  .ach .ic{
+    width:38px;height:38px;border-radius:10px;
+    background:rgba(255,255,255,.05);display:grid;place-items:center;
+    color:var(--ink-dim);flex-shrink:0;font-size:20px;
+  }
+  .ach.unlocked .ic{background:rgba(155,224,179,.18);color:var(--accent)}
+  .ach .t{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px}
+  .ach.unlocked .t{color:var(--ink)}
+  .ach:not(.unlocked) .t{color:var(--ink-soft)}
+  .ach .d{font-size:11.5px;color:var(--ink-dim);line-height:1.35}
+
+  /* ============== GROVE ============== */
+  .grove-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  .grove-head .card-title{margin-bottom:0}
+  .grove-meta{color:var(--ink-dim);font-size:12px;letter-spacing:.4px}
+  .grove-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:10px;
+    min-height:90px;
+  }
+  .grove-tree{
+    aspect-ratio:1;display:grid;place-items:center;
+    background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.15));
+    border:1px solid rgba(255,255,255,.04);
+    border-radius:12px;padding:6px;
+    position:relative;
+    transition:transform .2s ease,border-color .2s ease;
+  }
+  .grove-tree:hover{transform:translateY(-3px);border-color:rgba(155,224,179,.3)}
+  .grove-tree.dead{opacity:.32;filter:grayscale(.7)}
+  .grove-tree svg{width:100%;height:100%}
+  .grove-tree .tip{
+    position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+    white-space:nowrap;font-size:11px;background:#1a2820;color:var(--ink);
+    padding:6px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.08);
+    opacity:0;pointer-events:none;transition:opacity .15s;
+    z-index:5;
+  }
+  .grove-tree:hover .tip{opacity:1}
+  .clear-btn{
+    background:transparent;border:0;color:var(--ink-dim);font:inherit;font-size:12px;cursor:pointer;
+    padding:6px 10px;border-radius:8px;letter-spacing:.3px;
+  }
+  .clear-btn:hover{color:#ffc8c8;background:rgba(224,133,133,.08)}
+
+  /* ============== SETTINGS / VIEWS ============== */
+  .view{display:none;flex-direction:column;gap:24px}
+  .view.show{display:flex}
+
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:700px){.settings-grid{grid-template-columns:1fr}}
+  .field{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:14px 18px;background:rgba(0,0,0,.18);border-radius:12px;
+    border:1px solid rgba(255,255,255,.05);
+  }
+  .field label{font-size:14px;color:var(--ink-soft);font-weight:500}
+  .field .hint{font-size:11px;color:var(--ink-dim);display:block;margin-top:3px;font-weight:400}
+  .field input[type=number]{
+    width:80px;background:rgba(0,0,0,.25);
+    border:1px solid rgba(255,255,255,.08);
+    color:var(--ink);font:inherit;font-size:14px;
+    padding:8px 12px;border-radius:8px;text-align:right;
+  }
+  .field input[type=number]:focus{outline:none;border-color:rgba(155,224,179,.4)}
+  .field select{
+    background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);
+    color:var(--ink);font:inherit;font-size:13px;padding:8px 12px;border-radius:8px;
+    cursor:pointer;
+  }
+  .toggle{
+    width:44px;height:24px;border-radius:999px;background:rgba(255,255,255,.1);
+    position:relative;cursor:pointer;transition:background .2s;border:0;padding:0;flex-shrink:0;
+  }
+  .toggle::after{
+    content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;
+    background:var(--ink);border-radius:50%;transition:transform .2s;
+  }
+  .toggle.on{background:var(--accent)}
+  .toggle.on::after{transform:translateX(20px);background:#0e1f17}
+
+  /* ============== FOCUS MODE OVERLAY ============== */
+  .focus-mode{
+    position:fixed;inset:0;z-index:200;background:rgba(8,18,14,.85);
+    backdrop-filter:blur(20px);display:none;
+    align-items:center;justify-content:center;flex-direction:column;gap:30px;
+    animation:fadein .5s ease;
+  }
+  .focus-mode.on{display:flex}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  .focus-mode .time-xl{font-family:var(--font-mono);font-size:clamp(110px,18vw,180px);font-weight:200;letter-spacing:2px;font-variant-numeric:tabular-nums;line-height:1}
+  .focus-mode .focus-meta{color:var(--ink-soft);font-family:var(--font-display);font-style:italic;font-size:24px}
+  .focus-mode .focus-close{
+    position:absolute;top:24px;right:24px;
+  }
+
+  /* ============== TOAST ============== */
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:rgba(20,30,24,.95);color:var(--ink);
+    padding:13px 22px;border-radius:14px;font-size:13.5px;
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:var(--shadow-lg);
+    opacity:0;pointer-events:none;transition:all .35s ease;
+    z-index:300;backdrop-filter:blur(14px);
+    display:flex;align-items:center;gap:10px;max-width:90vw;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .ic{color:var(--accent);display:grid;place-items:center}
+  .toast .ic svg{width:18px;height:18px}
+
+  /* ============== ACHIEVEMENT POPUP ============== */
+  .ach-popup{
+    position:fixed;top:24px;right:24px;z-index:250;
+    background:linear-gradient(135deg, rgba(40,60,46,.96), rgba(30,46,36,.96));
+    border:1px solid rgba(155,224,179,.4);
+    padding:14px 18px;border-radius:14px;
+    box-shadow:var(--shadow-lg),0 0 40px rgba(155,224,179,.18);
+    display:flex;align-items:center;gap:14px;
+    transform:translateX(120%);transition:transform .5s cubic-bezier(.16,1,.3,1);
+    backdrop-filter:blur(14px);
+    max-width:340px;
+  }
+  .ach-popup.show{transform:translateX(0)}
+  .ach-popup .big-ic{font-size:32px;flex-shrink:0}
+  .ach-popup .ach-t{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:3px}
+  .ach-popup .ach-n{font-family:var(--font-display);font-size:18px;font-weight:500}
+  .ach-popup .ach-dd{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+
+  /* ============== ANIMATIONS / UTIL ============== */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .card{animation:fadeUp .55s cubic-bezier(.16,1,.3,1) both}
+  .row-2 .card{animation-delay:.08s}
+  .heat-card{animation-delay:.12s}
+
+  @keyframes treesway{
+    0%,100%{transform:rotate(-.7deg)}
+    50%{transform:rotate(.7deg)}
+  }
+
+  footer{text-align:center;color:var(--ink-faint);font-size:13px;letter-spacing:.4px;padding:14px 0 32px;font-family:var(--font-display);font-style:italic;line-height:1.4}
+
+  /* hide scrollbar on horizontal heatmap on mobile-ish */
+  .heat-grid::-webkit-scrollbar{height:6px}
+  .heat-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="scene-bg" id="sceneBg">
+  <div class="mountains">
+    <svg viewBox="0 0 1200 400" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="m1" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#1d3328" stop-opacity=".9"/>
+          <stop offset="1" stop-color="#0a1612" stop-opacity="1"/>
+        </linearGradient>
+        <linearGradient id="m2" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#16261f" stop-opacity=".95"/>
+          <stop offset="1" stop-color="#0a1612"/>
+        </linearGradient>
+        <linearGradient id="m3" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#0d1c16" stop-opacity="1"/>
+          <stop offset="1" stop-color="#08110d"/>
+        </linearGradient>
+      </defs>
+      <path fill="url(#m1)" d="M0 220 L120 150 L240 200 L360 130 L480 190 L600 110 L720 180 L840 140 L960 200 L1080 150 L1200 210 L1200 400 L0 400 Z" opacity=".55"/>
+      <path fill="url(#m2)" d="M0 260 L100 200 L200 240 L320 180 L440 230 L560 170 L680 240 L800 200 L920 250 L1040 200 L1200 260 L1200 400 L0 400 Z" opacity=".75"/>
+      <path fill="url(#m3)" d="M0 320 L150 270 L300 310 L450 260 L600 320 L750 270 L900 320 L1050 280 L1200 320 L1200 400 L0 400 Z"/>
+    </svg>
+  </div>
+  <div class="stars" id="stars"></div>
+  <div class="fireflies" id="fireflies"></div>
+  <div class="pollen" id="pollen"></div>
+</div>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3c-3 3-5 6-5 9a5 5 0 0 0 10 0c0-3-2-6-5-9z" fill="#9be0b3"/>
+          <rect x="11" y="14" width="2" height="7" rx="1" fill="#5a3e2a"/>
+        </svg>
+      </div>
+      <div>
+        <div class="title">Grove</div>
+        <span class="sub">Focus · Grow · Bloom</span>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-view="focus">Focus</button>
+      <button class="tab" data-view="achievements">Achievements</button>
+      <button class="tab" data-view="settings">Settings</button>
+    </nav>
+  </header>
+
+  <!-- ===== Focus view ===== -->
+  <section class="view show" id="view-focus">
+    <div class="main">
+      <div class="card timer-card">
+        <div class="mode-switch" id="modeSwitch">
+          <button data-mode="focus" class="active">Focus</button>
+          <button data-mode="short">Short Break</button>
+          <button data-mode="long">Long Break</button>
+        </div>
+
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="ringGradient" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="#9be0b3"/>
+                <stop offset="1" stop-color="#5fa888"/>
+              </linearGradient>
+            </defs>
+            <circle class="ring-pulse" cx="100" cy="100" r="92"/>
+            <circle class="ring-track" cx="100" cy="100" r="92"/>
+            <circle class="ring-prog" id="ringProg" cx="100" cy="100" r="92"
+                    stroke-dasharray="578.05" stroke-dashoffset="0"/>
+          </svg>
+          <div class="ring-center">
+            <div class="time" id="time">25:00</div>
+            <div class="session-meta" id="meta">Ready to focus</div>
+            <div class="session-task" id="sessionTask"></div>
+            <div class="dots" id="dots"></div>
+            <div class="next-hint" id="nextHint"></div>
+          </div>
+        </div>
+
+        <div class="presets" id="presets">
+          <button class="preset" data-min="15">15m</button>
+          <button class="preset" data-min="25">25m</button>
+          <button class="preset" data-min="45">45m</button>
+          <button class="preset" data-min="60">60m</button>
+          <button class="preset" data-min="90">90m</button>
+        </div>
+
+        <div class="controls">
+          <button class="btn primary" id="startBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <span id="startLabel">Start</span>
+          </button>
+          <button class="btn ghost" id="resetBtn">Reset</button>
+          <button class="btn ghost danger" id="skipBtn">Skip</button>
+          <button class="btn ghost" id="focusModeBtn" title="Enter focus mode (F)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9V5a2 2 0 0 1 2-2h4M21 9V5a2 2 0 0 0-2-2h-4M3 15v4a2 2 0 0 0 2 2h4M21 15v4a2 2 0 0 1-2 2h-4"/></svg>
+          </button>
+        </div>
+        <div class="kbd-hint"><span class="kbd">Space</span> start/pause <span class="kbd">R</span> reset <span class="kbd">F</span> focus mode</div>
+      </div>
+
+      <div class="card scene-card">
+        <div class="scene-header">
+          <div class="card-title">
+            <span class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2c-3 4-5 7-5 11a5 5 0 0 0 10 0c0-4-2-7-5-11z" fill="currentColor" opacity=".3"/><path d="M12 13v9"/></svg>
+            </span>
+            Your Tree
+          </div>
+        </div>
+        <div class="scene-stage" id="treeStage">
+          <div class="tree-status" id="treeStatus">Plant a seed by starting a focus session</div>
+          <div class="scene-overlay-controls">
+            <button class="iconbtn" id="newTreeBtn" title="New tree (changes species)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+            </button>
+          </div>
+          <div class="tree-mount">
+            <svg class="tree-svg" id="treeSvg" viewBox="0 0 360 360"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div class="card tasks-card">
+        <div class="card-title">
+          <span class="icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+          </span>
+          Today's Tasks
+        </div>
+        <div class="add-task">
+          <input class="input" id="taskInput" type="text" maxlength="80" placeholder="What are you focusing on?" />
+          <button class="add-btn" id="addTaskBtn" title="Add task">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <div class="task-list" id="taskList"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0z"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+          </span>
+          Ambient
+        </div>
+        <div class="sounds-grid" id="soundsGrid"></div>
+        <div class="volume-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/></svg>
+          <input type="range" id="vol" min="0" max="100" value="40"/>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span class="icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+          </span>
+          Today
+        </div>
+        <div class="stat-cards">
+          <div class="stat-row">
+            <div class="l"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-3 4-5 7-5 11a5 5 0 0 0 10 0c0-4-2-7-5-11z"/></svg> Trees today</div>
+            <div class="v" id="stToday">0</div>
+          </div>
+          <div class="stat-row">
+            <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> Focus time</div>
+            <div class="v"><span id="stMins">0</span><small>min today</small></div>
+          </div>
+          <div class="stat-row">
+            <div class="l"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg> Day streak</div>
+            <div class="v"><span id="stStreak">0</span><small>days</small></div>
+          </div>
+          <div class="stat-row">
+            <div class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg> All-time</div>
+            <div class="v"><span id="stAll">0</span><small>trees</small></div>
+          </div>
+        </div>
+        <div class="goal" id="goal">
+          <div class="goal-head">
+            <span>Daily goal</span>
+            <b><span id="goalCur">0</span> / <span id="goalTarget">120</span> min</b>
+          </div>
+          <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card heat-card">
+      <div class="heat-head">
+        <div class="card-title">
+          <span class="icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </span>
+          Activity · last 26 weeks
+        </div>
+        <div class="heat-legend">
+          <span>less</span>
+          <span class="swatch" style="background:rgba(255,255,255,.05)"></span>
+          <span class="swatch" style="background:rgba(155,224,179,.25)"></span>
+          <span class="swatch" style="background:rgba(155,224,179,.5)"></span>
+          <span class="swatch" style="background:rgba(155,224,179,.75)"></span>
+          <span class="swatch" style="background:#9be0b3"></span>
+          <span>more</span>
+        </div>
+      </div>
+      <div class="heat-grid" id="heatGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="grove-head">
+        <div class="card-title">
+          <span class="icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 21V8M6 8c-2-1-3-3-3-5 3 0 5 2 5 4M6 8c2-1 3-3 3-5-3 0-5 2-5 4M18 21V11M18 11c-2-1-3-3-3-5 3 0 5 2 5 4M18 11c2-1 3-3 3-5-3 0-5 2-5 4"/></svg>
+          </span>
+          Your Grove
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="grove-meta" id="groveMeta">0 trees</div>
+          <button class="clear-btn" id="clearForest">Clear</button>
+        </div>
+      </div>
+      <div class="grove-grid" id="groveGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== Achievements view ===== -->
+  <section class="view" id="view-achievements">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z"/><path d="M7 8H5a3 3 0 0 1 0-6h2M17 8h2a3 3 0 0 0 0-6h-2M9 18h6M12 14v4"/></svg>
+        </span>
+        Achievements
+      </div>
+      <div class="ach-grid" id="achGrid"></div>
+    </div>
+  </section>
+
+  <!-- ===== Settings view ===== -->
+  <section class="view" id="view-settings">
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3h.1a1.6 1.6 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+        </span>
+        Timer
+      </div>
+      <div class="settings-grid">
+        <div class="field"><div><label>Focus length</label><span class="hint">Minutes per focus session</span></div><input type="number" id="setFocus" min="1" max="120" value="25"/></div>
+        <div class="field"><div><label>Short break</label><span class="hint">Minutes between sessions</span></div><input type="number" id="setShort" min="1" max="60" value="5"/></div>
+        <div class="field"><div><label>Long break</label><span class="hint">After every 4 focus sessions</span></div><input type="number" id="setLong" min="1" max="60" value="15"/></div>
+        <div class="field"><div><label>Sessions per cycle</label><span class="hint">Pomodoros before long break</span></div><input type="number" id="setCycle" min="2" max="8" value="4"/></div>
+        <div class="field"><div><label>Daily goal</label><span class="hint">Target focus minutes per day</span></div><input type="number" id="setGoal" min="10" max="600" step="5" value="120"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg>
+        </span>
+        Behavior
+      </div>
+      <div class="settings-grid">
+        <div class="field"><div><label>Auto-start breaks</label><span class="hint">Start break automatically</span></div><button class="toggle" id="setAutoBreak"></button></div>
+        <div class="field"><div><label>Auto-start focus</label><span class="hint">Start focus automatically</span></div><button class="toggle" id="setAutoFocus"></button></div>
+        <div class="field"><div><label>Completion chime</label><span class="hint">Soft bell when session ends</span></div><button class="toggle on" id="setSound"></button></div>
+        <div class="field"><div><label>Desktop notifications</label><span class="hint">Notify on completion</span></div><button class="toggle on" id="setNotify"></button></div>
+        <div class="field"><div><label>Tree species</label><span class="hint">What you plant when you focus</span></div>
+          <select id="setSpecies">
+            <option value="auto">Auto / random</option>
+            <option value="oak">Oak</option>
+            <option value="cherry">Cherry blossom</option>
+            <option value="pine">Pine</option>
+            <option value="willow">Willow</option>
+          </select>
+        </div>
+        <div class="field"><div><label>Reset all data</label><span class="hint">Clears grove, stats, achievements</span></div><button class="btn danger" id="resetAll">Reset</button></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>“The best time to plant a tree was twenty years ago. The second-best is now.”</footer>
+</div>
+
+<!-- Focus-mode overlay -->
+<div class="focus-mode" id="focusMode">
+  <button class="iconbtn focus-close" id="focusClose">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+  <div class="time-xl" id="timeXL">25:00</div>
+  <div class="focus-meta" id="focusModeMeta">Focus</div>
+  <div class="controls">
+    <button class="btn primary" id="startBtnXL"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> <span id="startLabelXL">Start</span></button>
+    <button class="btn ghost" id="resetBtnXL">Reset</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="ach-popup" id="achPopup">
+  <div class="big-ic" id="apIc">🌳</div>
+  <div>
+    <div class="ach-t">Achievement unlocked</div>
+    <div class="ach-n" id="apName">Name</div>
+    <div class="ach-dd" id="apDesc">Description</div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+// ============== STORAGE ==============
+const LS_KEY = 'grove.v2';
+const defaults = {
+  settings: {
+    focus:25, short:5, long:15, cycle:4,
+    autoBreak:false, autoFocus:false,
+    sound:true, notify:true,
+    species:'auto',
+    volume:0.4,
+    goal:120,
+  },
+  stats: { totalMinutes:0, lastDate:null, streak:0 },
+  forest: [],
+  tasks: [],
+  activeTaskId: null,
+  pomodorosThisCycle: 0,
+  achievements: {},
+  daily: {}, // date -> minutes
+};
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return structuredClone(defaults);
+    const data = JSON.parse(raw);
+    return {
+      ...structuredClone(defaults),
+      ...data,
+      settings:{...defaults.settings,...(data.settings||{})},
+      stats:{...defaults.stats,...(data.stats||{})},
+      forest:data.forest||[],
+      tasks:data.tasks||[],
+      achievements:data.achievements||{},
+      daily:data.daily||{},
+    };
+  }catch(e){ return structuredClone(defaults); }
+}
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+let state = load();
+
+function localDateStr(d=new Date()){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const dd=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+const todayStr = () => localDateStr();
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+// ============== ELEMENTS ==============
+const els = {
+  time:$('#time'), meta:$('#meta'), ring:$('#ringProg'),
+  startBtn:$('#startBtn'), startLabel:$('#startLabel'),
+  resetBtn:$('#resetBtn'), skipBtn:$('#skipBtn'),
+  modeSwitch:$('#modeSwitch'), sessionTask:$('#sessionTask'),
+  dots:$('#dots'), focusModeBtn:$('#focusModeBtn'),
+  nextHint:$('#nextHint'), presets:$('#presets'),
+  goal:$('#goal'), goalCur:$('#goalCur'), goalTarget:$('#goalTarget'), goalFill:$('#goalFill'),
+  treeStage:$('#treeStage'), treeSvg:$('#treeSvg'), treeStatus:$('#treeStatus'),
+  newTreeBtn:$('#newTreeBtn'),
+  taskInput:$('#taskInput'), addTaskBtn:$('#addTaskBtn'), taskList:$('#taskList'),
+  soundsGrid:$('#soundsGrid'), vol:$('#vol'),
+  stToday:$('#stToday'), stMins:$('#stMins'), stStreak:$('#stStreak'), stAll:$('#stAll'),
+  heatGrid:$('#heatGrid'),
+  groveGrid:$('#groveGrid'), groveMeta:$('#groveMeta'), clearForest:$('#clearForest'),
+  achGrid:$('#achGrid'),
+  tabs:$('#tabs'),
+  toast:$('#toast'),
+  focusMode:$('#focusMode'), focusClose:$('#focusClose'),
+  timeXL:$('#timeXL'), focusModeMeta:$('#focusModeMeta'),
+  startBtnXL:$('#startBtnXL'), startLabelXL:$('#startLabelXL'), resetBtnXL:$('#resetBtnXL'),
+  apIc:$('#apIc'), apName:$('#apName'), apDesc:$('#apDesc'), achPopup:$('#achPopup'),
+  // settings
+  setFocus:$('#setFocus'), setShort:$('#setShort'), setLong:$('#setLong'), setCycle:$('#setCycle'), setGoal:$('#setGoal'),
+  setAutoBreak:$('#setAutoBreak'), setAutoFocus:$('#setAutoFocus'),
+  setSound:$('#setSound'), setNotify:$('#setNotify'), setSpecies:$('#setSpecies'),
+  resetAll:$('#resetAll'),
+};
+
+// ============== BACKGROUND SCENE ==============
+function buildScene(){
+  // stars
+  const stars = $('#stars');
+  for(let i=0;i<70;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*55+'%';
+    s.style.animationDelay = (Math.random()*4)+'s';
+    s.style.opacity = (.3 + Math.random()*.7);
+    s.style.width = s.style.height = (Math.random()<.15 ? '3px':'2px');
+    stars.appendChild(s);
+  }
+  // fireflies
+  const ff = $('#fireflies');
+  for(let i=0;i<14;i++){
+    const f = document.createElement('div');
+    f.className='firefly';
+    f.style.left = (10+Math.random()*80)+'%';
+    f.style.top = (40+Math.random()*45)+'%';
+    f.style.setProperty('--dx', ((Math.random()-.5)*120)+'px');
+    f.style.setProperty('--dy', ((Math.random()-.5)*80)+'px');
+    f.style.animationDelay = (Math.random()*12)+'s';
+    f.style.animationDuration = (8+Math.random()*8)+'s';
+    ff.appendChild(f);
+  }
+  // pollen / particles
+  const p = $('#pollen');
+  for(let i=0;i<22;i++){
+    const x = document.createElement('i');
+    x.style.left = (Math.random()*100)+'%';
+    x.style.animationDuration = (20+Math.random()*30)+'s';
+    x.style.animationDelay = (Math.random()*30)+'s';
+    x.style.opacity = (.3+Math.random()*.5);
+    p.appendChild(x);
+  }
+}
+buildScene();
+
+// ============== PROCEDURAL TREE ==============
+// Mulberry32 PRNG for reproducibility
+function rng(seed){ return function(){ let t=seed+=0x6D2B79F5; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; }; }
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+
+const SPECIES = {
+  oak: {
+    name:'Oak',
+    palette:{trunk:'#5a3e2a',trunkDark:'#3d2a1c',leaf1:'#7fc89a',leaf2:'#4f9871',leaf3:'#9be0b3',accent:'#b8e6c8'},
+    branchAngle:[.35,.7], lenFactor:[.7,.85], thicknessFactor:.72,
+    initLen:62, maxDepth:7, splitChance:.55, triSplitChance:.18,
+    leafShape:'cluster', leafSize:[5,9],
+  },
+  cherry: {
+    name:'Cherry',
+    palette:{trunk:'#4a3b3a',trunkDark:'#2e2422',leaf1:'#f3c6d1',leaf2:'#e89db0',leaf3:'#f8dde3',accent:'#fff'},
+    branchAngle:[.4,.8], lenFactor:[.65,.82], thicknessFactor:.7,
+    initLen:60, maxDepth:7, splitChance:.6, triSplitChance:.22,
+    leafShape:'blossom', leafSize:[4,7],
+  },
+  pine: {
+    name:'Pine',
+    palette:{trunk:'#4a3724',trunkDark:'#2d2014',leaf1:'#3d7556',leaf2:'#2a5a3e',leaf3:'#5a9d75',accent:'#82c098'},
+    branchAngle:[.55,.95], lenFactor:[.78,.88], thicknessFactor:.78,
+    initLen:78, maxDepth:8, splitChance:.5, triSplitChance:.05,
+    leafShape:'needle', leafSize:[3,5],
+  },
+  willow: {
+    name:'Willow',
+    palette:{trunk:'#5e4a32',trunkDark:'#3a2c1d',leaf1:'#a8c97b',leaf2:'#7da94f',leaf3:'#c9e09a',accent:'#e0eebf'},
+    branchAngle:[.25,.55], lenFactor:[.78,.92], thicknessFactor:.74,
+    initLen:55, maxDepth:7, splitChance:.65, triSplitChance:.15,
+    leafShape:'droop', leafSize:[3,7],
+  },
+};
+
+function pickSpecies(seed){
+  const list = ['oak','cherry','pine','willow'];
+  return list[Math.floor(rng(seed+71)()*list.length)];
+}
+
+// Build a tree skeleton (branches + leaves). Then render up to a growth fraction.
+function generateTree(speciesKey, seed){
+  const sp = SPECIES[speciesKey];
+  const R = rng(seed);
+  const branches = [];
+  const leaves = [];
+  const cx = 180, by = 320; // root
+  function recurse(x,y,len,ang,depth,thick){
+    if(depth>sp.maxDepth || len<3) return;
+    const wind = (R()-.5)*.05;
+    const x2 = x + Math.sin(ang+wind)*len;
+    const y2 = y - Math.cos(ang+wind)*len;
+    // slight curve via control point
+    const cxp = x + Math.sin(ang+wind*1.6)*(len*.5) + (R()-.5)*len*.08;
+    const cyp = y - Math.cos(ang+wind*1.6)*(len*.5);
+    branches.push({x1:x,y1:y,x2,y2,cx:cxp,cy:cyp,thick,depth});
+
+    if(depth>=sp.maxDepth-1 || (depth>3 && R()<.5)){
+      // drop a leaf cluster at the tip
+      const count = sp.leafShape==='needle'? 10 : (sp.leafShape==='droop'? 7 : 6);
+      for(let i=0;i<count;i++){
+        const lr = sp.leafSize[0] + R()*(sp.leafSize[1]-sp.leafSize[0]);
+        const rad = R()*Math.PI*2;
+        const off = R()*(sp.leafShape==='needle'?14:11);
+        let lx = x2 + Math.cos(rad)*off;
+        let ly = y2 + Math.sin(rad)*off;
+        if(sp.leafShape==='droop'){
+          ly += R()*22; // willow leaves hang lower
+          lx += (R()-.5)*4;
+        }
+        leaves.push({x:lx, y:ly, r:lr, rot:R()*360, color:Math.floor(R()*3), depth});
+      }
+    }
+
+    if(depth<sp.maxDepth){
+      const ba = sp.branchAngle[0] + R()*(sp.branchAngle[1]-sp.branchAngle[0]);
+      const lf = sp.lenFactor[0] + R()*(sp.lenFactor[1]-sp.lenFactor[0]);
+      // bias subtle randomness
+      recurse(x2,y2,len*lf,ang-ba,depth+1,thick*sp.thicknessFactor);
+      recurse(x2,y2,len*lf,ang+ba,depth+1,thick*sp.thicknessFactor);
+      if(R()<sp.triSplitChance){
+        recurse(x2,y2,len*lf*.85,ang+(R()-.5)*.35,depth+1,thick*sp.thicknessFactor*.9);
+      }
+    }
+  }
+  recurse(cx,by,sp.initLen,0,0,12);
+  return {sp,branches,leaves};
+}
+
+function renderTreeSVG(tree, growth){
+  const sp = tree.sp;
+  growth = Math.max(0,Math.min(1,growth));
+  // growth 0..1 -> reveal depth
+  const maxD = sp.maxDepth;
+  const revealDepth = growth * maxD;
+  const parts = [];
+
+  // ground tuft/shadow
+  parts.push(`<ellipse cx="180" cy="324" rx="64" ry="6" fill="#000" opacity=".25"/>`);
+
+  if(growth < 0.02){
+    // seed only
+    parts.push(`<circle cx="180" cy="318" r="5" fill="${sp.palette.trunk}"/>`);
+    parts.push(`<path d="M180 314 q-2 -7 -5 -10" stroke="${sp.palette.leaf2}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`);
+    parts.push(`<path d="M180 314 q3 -8 7 -10" stroke="${sp.palette.leaf1}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`);
+    return parts.join('');
+  }
+
+  // draw branches
+  for(const b of tree.branches){
+    if(b.depth >= revealDepth) continue;
+    // last visible band fade
+    const visBand = Math.max(0, Math.min(1, revealDepth - b.depth));
+    const opa = Math.min(1, visBand+0.1);
+    const baseColor = b.depth<2 ? sp.palette.trunk : sp.palette.trunkDark;
+    parts.push(`<path d="M${b.x1.toFixed(1)} ${b.y1.toFixed(1)} Q${b.cx.toFixed(1)} ${b.cy.toFixed(1)} ${b.x2.toFixed(1)} ${b.y2.toFixed(1)}" stroke="${baseColor}" stroke-width="${b.thick.toFixed(2)}" stroke-linecap="round" fill="none" opacity="${opa.toFixed(2)}"/>`);
+  }
+
+  // draw leaves (only if growth is decent)
+  if(growth > 0.35){
+    const leafGrowth = Math.min(1, (growth - 0.35)/0.6);
+    const palette = [sp.palette.leaf1, sp.palette.leaf2, sp.palette.leaf3];
+    // shuffle order based on depth so they pop in roughly outward
+    const ls = tree.leaves.filter(l => l.depth < revealDepth);
+    const visibleCount = Math.floor(ls.length * leafGrowth);
+    for(let i=0;i<visibleCount;i++){
+      const l = ls[i];
+      const fill = palette[l.color];
+      if(sp.leafShape==='blossom'){
+        // small flower
+        parts.push(`<g class="leaf" transform="translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.rot.toFixed(0)})" style="animation-delay:${(i*.04).toFixed(2)}s">
+          <circle r="${l.r.toFixed(1)}" fill="${fill}"/>
+          <circle r="${(l.r*.4).toFixed(1)}" fill="${sp.palette.accent}" opacity=".8"/>
+        </g>`);
+      } else if(sp.leafShape==='needle'){
+        parts.push(`<g class="leaf" transform="translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.rot.toFixed(0)})" style="animation-delay:${(i*.03).toFixed(2)}s">
+          <ellipse rx="${(l.r*0.4).toFixed(1)}" ry="${l.r.toFixed(1)}" fill="${fill}"/>
+        </g>`);
+      } else if(sp.leafShape==='droop'){
+        parts.push(`<g class="leaf" transform="translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.rot.toFixed(0)})" style="animation-delay:${(i*.04).toFixed(2)}s">
+          <ellipse rx="${(l.r*.45).toFixed(1)}" ry="${l.r.toFixed(1)}" fill="${fill}"/>
+        </g>`);
+      } else { // cluster
+        parts.push(`<g class="leaf" transform="translate(${l.x.toFixed(1)} ${l.y.toFixed(1)}) rotate(${l.rot.toFixed(0)})" style="animation-delay:${(i*.05).toFixed(2)}s">
+          <ellipse rx="${(l.r*.85).toFixed(1)}" ry="${l.r.toFixed(1)}" fill="${fill}"/>
+        </g>`);
+      }
+    }
+
+    // blooms / accents at full growth
+    if(growth > 0.92 && sp.leafShape==='blossom'){
+      // already done via blossoms
+    }
+  }
+
+  return parts.join('');
+}
+
+// Small tree (for grove tiles); uses smaller viewport
+function renderGroveTreeSVG(speciesKey, seed, dead){
+  const tree = generateTree(speciesKey, seed);
+  const svg = renderTreeSVG(tree, 1.0);
+  return svg;
+}
+
+// ============== TIMER STATE ==============
+let mode = 'focus';
+let running = false;
+let endAt = null;
+let remaining = 0;
+let totalForSession = 0;
+let tickHandle = null;
+let currentSpecies = state.settings.species==='auto' ? pickSpecies(Date.now()) : state.settings.species;
+let currentTreeSeed = Date.now();
+let currentTree = generateTree(currentSpecies, currentTreeSeed);
+
+function durationFor(m){ return state.settings[m] * 60 * 1000; }
+
+function setMode(m){
+  mode = m;
+  document.body.classList.toggle('mode-break', m==='short');
+  document.body.classList.toggle('mode-long', m==='long');
+  [...els.modeSwitch.querySelectorAll('button')].forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode===m);
+  });
+  if(!running){
+    remaining = durationFor(m);
+    totalForSession = remaining;
+    render();
+    els.meta.textContent = {focus:'Ready to focus', short:'Short break', long:'Long break'}[m];
+    if(m==='focus'){
+      regenTree();
+    } else {
+      els.treeStatus.textContent = 'Take a moment. Your grove is growing 🌿';
+      renderTreeIdle();
+    }
+  }
+}
+
+function regenTree(){
+  currentSpecies = state.settings.species==='auto' ? pickSpecies(Date.now()) : state.settings.species;
+  currentTreeSeed = Date.now() + Math.floor(Math.random()*99999);
+  currentTree = generateTree(currentSpecies, currentTreeSeed);
+}
+
+function formatTime(ms){
+  const s = Math.max(0, Math.round(ms/1000));
+  const mm = String(Math.floor(s/60)).padStart(2,'0');
+  const ss = String(s%60).padStart(2,'0');
+  return `${mm}:${ss}`;
+}
+
+function renderDots(){
+  const total = state.settings.cycle;
+  const done = state.pomodorosThisCycle;
+  let html='';
+  for(let i=0;i<total;i++){
+    let cls='d';
+    if(i<done) cls+=' done';
+    else if(i===done && mode==='focus') cls+=' current';
+    html += `<span class="${cls}"></span>`;
+  }
+  els.dots.innerHTML = html;
+}
+
+function activeTaskLabel(){
+  const t = state.tasks.find(t=>t.id===state.activeTaskId && !t.done);
+  return t ? t.label : '';
+}
+
+function render(){
+  const label = activeTaskLabel();
+  els.sessionTask.textContent = mode==='focus' ? label : '';
+  els.time.textContent = formatTime(remaining);
+  els.timeXL.textContent = formatTime(remaining);
+  els.focusModeMeta.textContent = mode==='focus' ? (label||'Focus') : (mode==='short'?'Short break':'Long break');
+  const frac = totalForSession>0 ? (1 - remaining/totalForSession) : 0;
+  const C = 2 * Math.PI * 92;
+  els.ring.setAttribute('stroke-dasharray', C);
+  els.ring.setAttribute('stroke-dashoffset', (C * (1 - frac)).toFixed(2));
+  document.title = (running||remaining<totalForSession)
+    ? `${formatTime(remaining)} · Grove`
+    : 'Grove · Focus';
+  if(mode==='focus'){
+    renderTree(frac);
+  }
+  renderDots();
+  renderNextHint();
+  renderPresetsActive();
+  document.body.classList.toggle('running', running);
+}
+
+function renderNextHint(){
+  let nxt='';
+  if(mode==='focus'){
+    const willBeLong = ((state.pomodorosThisCycle+1) % state.settings.cycle) === 0;
+    nxt = `Next: <b>${willBeLong ? state.settings.long+'m long break' : state.settings.short+'m short break'}</b>`;
+  } else {
+    nxt = `Next: <b>${state.settings.focus}m focus</b>`;
+  }
+  els.nextHint.innerHTML = nxt;
+}
+
+function renderPresetsActive(){
+  if(!els.presets) return;
+  const cur = state.settings.focus;
+  [...els.presets.children].forEach(b=>{
+    b.classList.toggle('active', mode==='focus' && parseInt(b.dataset.min,10)===cur);
+  });
+  const fresh = !running && remaining === totalForSession;
+  els.presets.style.display = (mode==='focus' && fresh) ? '' : 'none';
+}
+
+function start(){
+  if(running) return;
+  running = true;
+  if(remaining<=0) remaining = durationFor(mode);
+  endAt = Date.now() + remaining;
+  setStartLabel('Pause', true);
+  if(mode==='focus' && remaining===totalForSession){
+    regenTree();
+    els.treeStatus.textContent = 'Seed planted. Keep focusing 🌱';
+  }
+  tickHandle = setInterval(tick, 250);
+  ensureNotifyPermission();
+  save();
+}
+function pause(){
+  if(!running) return;
+  running = false;
+  remaining = Math.max(0, endAt - Date.now());
+  clearInterval(tickHandle); tickHandle=null;
+  setStartLabel('Resume', false);
+  render();
+}
+function reset(){
+  const wasInProgress = (running || remaining<totalForSession) && remaining>0;
+  if(wasInProgress && mode==='focus'){
+    const minutes = Math.max(1, Math.round((totalForSession - remaining)/60000));
+    addToForest({minutes, dead:true, species:currentSpecies, seed:currentTreeSeed});
+    toast('🥀 Your tree withered. Start fresh anytime');
+  }
+  running = false;
+  clearInterval(tickHandle); tickHandle=null;
+  remaining = durationFor(mode);
+  totalForSession = remaining;
+  setStartLabel('Start', false);
+  if(mode==='focus'){
+    regenTree();
+    els.treeStatus.textContent = 'Plant a seed by starting a focus session';
+  }
+  render();
+}
+function skip(){
+  if(mode==='focus'){
+    const frac = 1 - remaining/totalForSession;
+    if(frac >= 0.5){
+      const minutes = Math.max(1, Math.round((totalForSession - remaining)/60000));
+      completeFocus(minutes);
+    } else {
+      toast('Skipped. Not enough focus to grow a tree');
+    }
+  }
+  running=false; clearInterval(tickHandle); tickHandle=null;
+  nextMode();
+}
+function tick(){
+  remaining = Math.max(0, endAt - Date.now());
+  if(remaining<=0) complete();
+  else render();
+}
+function complete(){
+  running = false; clearInterval(tickHandle); tickHandle=null;
+  if(state.settings.sound) chime(mode);
+  if(state.settings.notify) notifyComplete(mode);
+  if(mode==='focus'){
+    completeFocus(state.settings.focus);
+  } else {
+    toast(mode==='long' ? '🌿 Back to it. Focus time' : '🌿 Break over');
+  }
+  nextMode();
+}
+function completeFocus(minutes){
+  state.pomodorosThisCycle = (state.pomodorosThisCycle+1) % state.settings.cycle;
+  state.stats.totalMinutes += minutes;
+  const t = todayStr();
+  state.daily[t] = (state.daily[t]||0) + minutes;
+  // streak
+  if(state.stats.lastDate !== t){
+    const y = new Date(); y.setDate(y.getDate()-1);
+    const yest = localDateStr(y);
+    state.stats.streak = (state.stats.lastDate===yest ? state.stats.streak+1 : 1);
+    state.stats.lastDate = t;
+  }
+  // mark task done if completed by time
+  if(state.activeTaskId){
+    const task = state.tasks.find(x=>x.id===state.activeTaskId);
+    if(task){ task.pomodoros = (task.pomodoros||0)+1; }
+  }
+  addToForest({minutes, dead:false, species:currentSpecies, seed:currentTreeSeed});
+  toast('🌳 Your tree is now part of the grove');
+  checkAchievements();
+  renderHeatmap();
+}
+function nextMode(){
+  let next;
+  if(mode==='focus'){
+    next = (state.pomodorosThisCycle===0) ? 'long' : 'short';
+  } else next = 'focus';
+  setMode(next);
+  renderStats();
+  renderGrove();
+  if((next==='focus' && state.settings.autoFocus) || (next!=='focus' && state.settings.autoBreak)){
+    setTimeout(()=>start(), 700);
+  } else {
+    render();
+  }
+  save();
+}
+
+function setStartLabel(lbl, isPlaying){
+  els.startLabel.textContent = lbl;
+  els.startLabelXL.textContent = lbl;
+  const iconHTML = isPlaying ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M8 5v14l11-7z"/>';
+  els.startBtn.querySelector('svg').innerHTML = iconHTML;
+  els.startBtnXL.querySelector('svg').innerHTML = iconHTML;
+}
+
+function addToForest(opts){
+  const item = {
+    id: Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    ts: Date.now(),
+    minutes: opts.minutes,
+    label: activeTaskLabel() || 'Focus session',
+    dead: !!opts.dead,
+    species: opts.species,
+    seed: opts.seed,
+  };
+  state.forest.unshift(item);
+  if(state.forest.length>240) state.forest.length=240;
+  save();
+}
+
+function renderTree(frac){
+  let stage;
+  if(frac<.04) stage=0; else if(frac<.18) stage=1; else if(frac<.4) stage=2;
+  else if(frac<.65) stage=3; else if(frac<.95) stage=4; else stage=5;
+  els.treeSvg.innerHTML = renderTreeSVG(currentTree, frac);
+  if(running){
+    const msgs = [
+      '🌱 Seed in the soil…',
+      '🌿 A tiny sprout breaks the surface',
+      '🪴 The sapling is reaching upward',
+      '🌳 Branches stretching wide',
+      '🌳 A strong young tree',
+      '🌸 In full bloom. Almost done!'
+    ];
+    els.treeStatus.textContent = msgs[stage];
+  }
+}
+function renderTreeIdle(){
+  if(mode==='focus'){
+    els.treeSvg.innerHTML = renderTreeSVG(currentTree, 0);
+  } else {
+    els.treeSvg.innerHTML = renderTreeSVG(currentTree, 1);
+  }
+}
+
+// ============== GROVE ==============
+function renderGrove(){
+  const g = els.groveGrid; g.innerHTML='';
+  els.groveMeta.textContent = `${state.forest.filter(t=>!t.dead).length} trees · ${state.forest.length} total`;
+  if(state.forest.length===0){
+    g.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Your grove is empty. Complete a focus session to plant your first tree.</div>';
+    return;
+  }
+  state.forest.forEach(t=>{
+    const d = document.createElement('div');
+    d.className = 'grove-tree' + (t.dead?' dead':'');
+    const date = new Date(t.ts);
+    d.innerHTML = `
+      <svg viewBox="0 0 360 360">${renderGroveTreeSVG(t.species||'oak', t.seed||t.ts, t.dead)}</svg>
+      <div class="tip">${escapeHTML(t.label)} · ${t.minutes}m · ${date.toLocaleDateString()}</div>
+    `;
+    g.appendChild(d);
+  });
+}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+// ============== STATS ==============
+function renderStats(){
+  const t = todayStr();
+  const todayTrees = state.forest.filter(x=>!x.dead && localDateStr(new Date(x.ts))===t).length;
+  const todayMins = state.daily[t]||0;
+  els.stToday.textContent = todayTrees;
+  els.stMins.textContent = todayMins;
+  els.stStreak.textContent = state.stats.streak;
+  els.stAll.textContent = state.forest.filter(x=>!x.dead).length;
+  // daily goal
+  const target = state.settings.goal||120;
+  els.goalCur.textContent = todayMins;
+  els.goalTarget.textContent = target;
+  const pct = Math.min(100, Math.round((todayMins/target)*100));
+  els.goalFill.style.width = pct+'%';
+  els.goal.classList.toggle('complete', todayMins>=target);
+}
+
+// ============== HEATMAP ==============
+function renderHeatmap(){
+  const grid = els.heatGrid; grid.innerHTML='';
+  const weeks = 26;
+  const days = weeks*7;
+  const today = new Date();
+  // align to nearest sunday going back
+  const dow = today.getDay();
+  // Build cells from oldest to newest
+  const cells = [];
+  for(let i=days-1;i>=0;i--){
+    const d = new Date(today);
+    d.setDate(today.getDate()-i);
+    cells.push(d);
+  }
+  // figure out max for scaling
+  const vals = cells.map(d=>state.daily[localDateStr(d)]||0);
+  const max = Math.max(60, ...vals);
+  cells.forEach((d,i)=>{
+    const k = localDateStr(d);
+    const v = state.daily[k]||0;
+    const intensity = v===0 ? 0 : Math.min(1, v/max);
+    let bg = 'rgba(255,255,255,.04)';
+    if(intensity>0){
+      const a = .2 + intensity*.8;
+      bg = `rgba(155,224,179,${a.toFixed(2)})`;
+    }
+    const el = document.createElement('div');
+    el.className='heat-cell';
+    el.style.background = bg;
+    if(k===todayStr()) el.style.outline='1px solid rgba(255,255,255,.25)';
+    el.innerHTML = `<div class="tip">${v} min · ${d.toLocaleDateString()}</div>`;
+    grid.appendChild(el);
+  });
+}
+
+// ============== ACHIEVEMENTS ==============
+const ACHIEVEMENTS = [
+  {id:'first', icon:'🌱', name:'First Sprout', desc:'Complete your first focus session', test:s=>s.forest.filter(t=>!t.dead).length>=1},
+  {id:'five', icon:'🪴', name:'Sapling', desc:'Grow 5 trees', test:s=>s.forest.filter(t=>!t.dead).length>=5},
+  {id:'twenty', icon:'🌳', name:'Grove Keeper', desc:'Grow 25 trees', test:s=>s.forest.filter(t=>!t.dead).length>=25},
+  {id:'hundred', icon:'🌲', name:'Forest Warden', desc:'Grow 100 trees', test:s=>s.forest.filter(t=>!t.dead).length>=100},
+  {id:'streak3', icon:'🔥', name:'Three In A Row', desc:'3-day focus streak', test:s=>s.stats.streak>=3},
+  {id:'streak7', icon:'⚡', name:'Week Warrior', desc:'7-day focus streak', test:s=>s.stats.streak>=7},
+  {id:'streak30', icon:'☀️', name:'Solstice', desc:'30-day focus streak', test:s=>s.stats.streak>=30},
+  {id:'marathon', icon:'🏃', name:'Marathon', desc:'2 hours focused in one day', test:s=>{ return Object.values(s.daily||{}).some(v=>v>=120); }},
+  {id:'deep', icon:'🌊', name:'Deep Dive', desc:'Complete a 50+ minute focus session', test:s=>s.forest.some(t=>!t.dead && t.minutes>=50)},
+  {id:'early', icon:'🌅', name:'Early Bird', desc:'Focus before 7 AM', test:s=>s.forest.some(t=>!t.dead && new Date(t.ts).getHours()<7)},
+  {id:'night', icon:'🌙', name:'Night Owl', desc:'Focus after 10 PM', test:s=>s.forest.some(t=>!t.dead && new Date(t.ts).getHours()>=22)},
+  {id:'variety', icon:'🌈', name:'Variety', desc:'Plant 3 different species', test:s=>{ const set=new Set(s.forest.filter(t=>!t.dead).map(t=>t.species)); return set.size>=3; }},
+];
+function checkAchievements(){
+  let unlocked=null;
+  for(const a of ACHIEVEMENTS){
+    if(!state.achievements[a.id] && a.test(state)){
+      state.achievements[a.id] = Date.now();
+      unlocked = a;
+    }
+  }
+  save();
+  if(unlocked) showAchPopup(unlocked);
+  renderAchievements();
+}
+function renderAchievements(){
+  els.achGrid.innerHTML = ACHIEVEMENTS.map(a=>{
+    const on = !!state.achievements[a.id];
+    return `<div class="ach ${on?'unlocked':''}">
+      <div class="ic">${a.icon}</div>
+      <div><div class="t">${escapeHTML(a.name)}</div><div class="d">${escapeHTML(a.desc)}</div></div>
+    </div>`;
+  }).join('');
+}
+function showAchPopup(a){
+  els.apIc.textContent = a.icon;
+  els.apName.textContent = a.name;
+  els.apDesc.textContent = a.desc;
+  els.achPopup.classList.add('show');
+  setTimeout(()=>els.achPopup.classList.remove('show'), 4500);
+}
+
+// ============== TASKS ==============
+function renderTasks(){
+  els.taskList.innerHTML='';
+  const list = state.tasks.filter(t=>!t.archived);
+  if(list.length===0){
+    els.taskList.innerHTML = '<div class="empty-msg">Add a task to focus on</div>';
+    return;
+  }
+  for(const t of list){
+    const d = document.createElement('div');
+    d.className = 'task' + (t.done?' done':'') + (t.id===state.activeTaskId && !t.done?' active':'');
+    d.innerHTML = `
+      <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+      <div class="label">${escapeHTML(t.label)}${t.pomodoros?` <span style="color:var(--ink-dim);font-size:11px">· ${t.pomodoros}🌱</span>`:''}</div>
+      <button class="del" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg></button>
+    `;
+    d.querySelector('.check').addEventListener('click', e=>{
+      e.stopPropagation();
+      t.done = !t.done;
+      if(t.done && state.activeTaskId===t.id) state.activeTaskId=null;
+      save(); renderTasks(); render();
+    });
+    d.querySelector('.del').addEventListener('click', e=>{
+      e.stopPropagation();
+      state.tasks = state.tasks.filter(x=>x.id!==t.id);
+      if(state.activeTaskId===t.id) state.activeTaskId=null;
+      save(); renderTasks(); render();
+    });
+    d.addEventListener('click', ()=>{
+      if(t.done) return;
+      state.activeTaskId = (state.activeTaskId===t.id)?null:t.id;
+      save(); renderTasks(); render();
+    });
+    els.taskList.appendChild(d);
+  }
+}
+function addTask(){
+  const v = els.taskInput.value.trim();
+  if(!v) return;
+  const t = { id:Date.now()+'_'+Math.random().toString(36).slice(2,6), label:v, done:false, pomodoros:0, created:Date.now() };
+  state.tasks.unshift(t);
+  if(!state.activeTaskId) state.activeTaskId = t.id;
+  els.taskInput.value='';
+  save(); renderTasks(); render();
+}
+
+// ============== AMBIENT SOUNDS ==============
+let audioCtx = null;
+function getCtx(){ audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
+const SOUNDS = [
+  {id:'rain',   name:'Rain',   ic:'🌧️'},
+  {id:'forest', name:'Forest', ic:'🌲'},
+  {id:'waves',  name:'Waves',  ic:'🌊'},
+  {id:'brown',  name:'Brown',  ic:'🟫'},
+  {id:'white',  name:'White',  ic:'⚪'},
+  {id:'fire',   name:'Fire',   ic:'🔥'},
+];
+const activeSounds = {};
+function makeNoiseBuffer(ctx, type){
+  const bufSize = 2 * ctx.sampleRate;
+  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  let lastOut=0, b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+  for(let i=0;i<bufSize;i++){
+    const w = Math.random()*2-1;
+    if(type==='brown'){
+      lastOut = (lastOut + (0.02 * w)) / 1.02;
+      data[i] = lastOut * 3.5;
+    } else if(type==='pink'){
+      b0 = 0.99886 * b0 + w * 0.0555179;
+      b1 = 0.99332 * b1 + w * 0.0750759;
+      b2 = 0.96900 * b2 + w * 0.1538520;
+      b3 = 0.86650 * b3 + w * 0.3104856;
+      b4 = 0.55000 * b4 + w * 0.5329522;
+      b5 = -0.7616 * b5 - w * 0.0168980;
+      data[i] = (b0+b1+b2+b3+b4+b5+b6+w*0.5362) * 0.11;
+      b6 = w * 0.115926;
+    } else {
+      data[i] = w;
+    }
+  }
+  return buf;
+}
+function startSound(id){
+  const ctx = getCtx();
+  const out = ctx.createGain();
+  out.gain.value = state.settings.volume;
+  out.connect(ctx.destination);
+
+  let stop = ()=>{};
+  if(id==='white' || id==='brown'){
+    const src = ctx.createBufferSource();
+    src.buffer = makeNoiseBuffer(ctx, id==='brown'?'brown':'white');
+    src.loop=true;
+    const filt = ctx.createBiquadFilter();
+    filt.type='lowpass';
+    filt.frequency.value = id==='brown'? 800 : 6000;
+    src.connect(filt); filt.connect(out);
+    src.start();
+    stop = ()=>{ try{src.stop();}catch(e){}; src.disconnect(); filt.disconnect(); out.disconnect(); };
+  } else if(id==='rain'){
+    const src = ctx.createBufferSource();
+    src.buffer = makeNoiseBuffer(ctx, 'pink');
+    src.loop=true;
+    const filt = ctx.createBiquadFilter();
+    filt.type='highpass'; filt.frequency.value=400;
+    const filt2 = ctx.createBiquadFilter();
+    filt2.type='lowpass'; filt2.frequency.value=4500;
+    src.connect(filt); filt.connect(filt2); filt2.connect(out);
+    src.start();
+    // occasional drops
+    let dropTimer = null;
+    const scheduleDrop = ()=>{
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.frequency.value = 400 + Math.random()*1400;
+      o.type='sine';
+      const t0 = ctx.currentTime;
+      g.gain.setValueAtTime(0,t0);
+      g.gain.linearRampToValueAtTime(0.08*state.settings.volume, t0+0.005);
+      g.gain.exponentialRampToValueAtTime(0.001, t0+0.18);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0); o.stop(t0+0.2);
+      dropTimer = setTimeout(scheduleDrop, 80 + Math.random()*220);
+    };
+    dropTimer = setTimeout(scheduleDrop, 100);
+    stop = ()=>{ try{src.stop();}catch(e){}; src.disconnect(); filt.disconnect(); filt2.disconnect(); out.disconnect(); if(dropTimer) clearTimeout(dropTimer); };
+  } else if(id==='forest'){
+    const src = ctx.createBufferSource();
+    src.buffer = makeNoiseBuffer(ctx,'pink');
+    src.loop=true;
+    const filt = ctx.createBiquadFilter();
+    filt.type='lowpass'; filt.frequency.value=1500;
+    const g2 = ctx.createGain(); g2.gain.value=0.7;
+    src.connect(filt); filt.connect(g2); g2.connect(out);
+    src.start();
+    let birdTimer=null;
+    const scheduleBird = ()=>{
+      // tweet: short freq sweep
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      const f0 = 1800 + Math.random()*1200;
+      o.type='sine';
+      const t0 = ctx.currentTime;
+      o.frequency.setValueAtTime(f0, t0);
+      o.frequency.exponentialRampToValueAtTime(f0*0.7, t0+0.14);
+      g.gain.setValueAtTime(0,t0);
+      g.gain.linearRampToValueAtTime(0.06*state.settings.volume, t0+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t0+0.18);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0); o.stop(t0+0.22);
+      // double tweet sometimes
+      if(Math.random()<0.4){
+        const o2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        o2.type='sine';
+        const t1 = t0+0.22;
+        o2.frequency.setValueAtTime(f0*1.05, t1);
+        o2.frequency.exponentialRampToValueAtTime(f0*0.75, t1+0.12);
+        g2.gain.setValueAtTime(0,t1);
+        g2.gain.linearRampToValueAtTime(0.06*state.settings.volume, t1+0.02);
+        g2.gain.exponentialRampToValueAtTime(0.001, t1+0.16);
+        o2.connect(g2); g2.connect(ctx.destination);
+        o2.start(t1); o2.stop(t1+0.2);
+      }
+      birdTimer = setTimeout(scheduleBird, 1500+Math.random()*5500);
+    };
+    birdTimer = setTimeout(scheduleBird, 800);
+    stop = ()=>{ try{src.stop();}catch(e){}; src.disconnect(); filt.disconnect(); g2.disconnect(); out.disconnect(); if(birdTimer) clearTimeout(birdTimer); };
+  } else if(id==='waves'){
+    const src = ctx.createBufferSource();
+    src.buffer = makeNoiseBuffer(ctx,'brown');
+    src.loop=true;
+    const filt = ctx.createBiquadFilter();
+    filt.type='lowpass'; filt.frequency.value=900;
+    // LFO modulating volume for wave swell
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.12;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 0.5;
+    const baseGain = ctx.createGain();
+    baseGain.gain.value = 0.5;
+    lfo.connect(lfoGain);
+    lfoGain.connect(baseGain.gain);
+    src.connect(filt); filt.connect(baseGain); baseGain.connect(out);
+    src.start(); lfo.start();
+    stop = ()=>{ try{src.stop();}catch(e){}; try{lfo.stop();}catch(e){}; src.disconnect(); filt.disconnect(); baseGain.disconnect(); lfo.disconnect(); lfoGain.disconnect(); out.disconnect(); };
+  } else if(id==='fire'){
+    const src = ctx.createBufferSource();
+    src.buffer = makeNoiseBuffer(ctx,'brown');
+    src.loop=true;
+    const filt = ctx.createBiquadFilter();
+    filt.type='lowpass'; filt.frequency.value=600;
+    src.connect(filt); filt.connect(out);
+    src.start();
+    let crackleTimer=null;
+    const scheduleCrackle = ()=>{
+      const o = ctx.createBufferSource();
+      o.buffer = makeNoiseBuffer(ctx,'pink');
+      const g = ctx.createGain();
+      const t0 = ctx.currentTime;
+      g.gain.setValueAtTime(0,t0);
+      g.gain.linearRampToValueAtTime(0.12*state.settings.volume, t0+0.005);
+      g.gain.exponentialRampToValueAtTime(0.001, t0+0.06);
+      const hpf = ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value=2000;
+      o.connect(hpf); hpf.connect(g); g.connect(ctx.destination);
+      o.start(t0); o.stop(t0+0.07);
+      crackleTimer = setTimeout(scheduleCrackle, 200+Math.random()*1200);
+    };
+    crackleTimer = setTimeout(scheduleCrackle, 400);
+    stop = ()=>{ try{src.stop();}catch(e){}; src.disconnect(); filt.disconnect(); out.disconnect(); if(crackleTimer) clearTimeout(crackleTimer); };
+  }
+  activeSounds[id] = {stop, gain:out};
+}
+function stopSound(id){
+  if(activeSounds[id]){ activeSounds[id].stop(); delete activeSounds[id]; }
+}
+function toggleSound(id){
+  if(activeSounds[id]) stopSound(id);
+  else startSound(id);
+  renderSounds();
+}
+function updateVolume(){
+  Object.values(activeSounds).forEach(s=>{ if(s.gain) s.gain.gain.value = state.settings.volume; });
+}
+function renderSounds(){
+  els.soundsGrid.innerHTML = SOUNDS.map(s=>{
+    const on = !!activeSounds[s.id];
+    return `<button class="sound ${on?'on':''}" data-id="${s.id}">
+      <span class="ic">${s.ic}</span>
+      <span>${s.name}</span>
+    </button>`;
+  }).join('');
+}
+els.soundsGrid.addEventListener('click', e=>{
+  const b = e.target.closest('.sound'); if(!b) return;
+  toggleSound(b.dataset.id);
+});
+
+// ============== CHIME / NOTIFY ==============
+function chime(modeEnded){
+  try{
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+    const freqs = modeEnded==='focus' ? [880, 1318.5] : [659.25, 987.77];
+    freqs.forEach((f,i)=>{
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type='sine'; o.frequency.value=f;
+      g.gain.setValueAtTime(0, now+i*0.18);
+      g.gain.linearRampToValueAtTime(0.22, now+i*0.18+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, now+i*0.18+1.6);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now+i*0.18); o.stop(now+i*0.18+1.7);
+    });
+  }catch(e){}
+}
+function ensureNotifyPermission(){
+  if(!state.settings.notify) return;
+  if(!('Notification' in window)) return;
+  if(Notification.permission==='default') Notification.requestPermission();
+}
+function notifyComplete(modeEnded){
+  if(!('Notification' in window)) return;
+  if(Notification.permission!=='granted') return;
+  const body = modeEnded==='focus' ? 'Focus complete. Take a break 🌳'
+             : modeEnded==='long' ? 'Long break done. Ready to focus 🌱'
+             : 'Break over. Ready to focus 🌱';
+  try{ new Notification('Grove', {body, silent:true}); }catch(e){}
+}
+
+// ============== TOAST ==============
+let toastTimer = null;
+function toast(msg){
+  els.toast.innerHTML = `<span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/></svg></span>${escapeHTML(msg)}`;
+  els.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>els.toast.classList.remove('show'), 3400);
+}
+
+// ============== FOCUS MODE ==============
+function toggleFocusMode(force){
+  const on = force!==undefined ? force : !els.focusMode.classList.contains('on');
+  els.focusMode.classList.toggle('on', on);
+}
+
+// ============== EVENT WIRING ==============
+els.startBtn.addEventListener('click', ()=>{ running?pause():start(); });
+els.startBtnXL.addEventListener('click', ()=>{ running?pause():start(); });
+els.resetBtn.addEventListener('click', reset);
+els.resetBtnXL.addEventListener('click', reset);
+els.skipBtn.addEventListener('click', skip);
+els.focusModeBtn.addEventListener('click', ()=>toggleFocusMode(true));
+els.focusClose.addEventListener('click', ()=>toggleFocusMode(false));
+els.newTreeBtn.addEventListener('click', ()=>{
+  if(running){ toast('Can\'t change species during an active session'); return; }
+  regenTree(); render(); renderTreeIdle();
+});
+els.modeSwitch.addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  if(running){ if(!confirm('Stop the current session and switch?')) return; reset(); }
+  setMode(b.dataset.mode);
+});
+els.tabs.addEventListener('click', e=>{
+  const b = e.target.closest('button.tab'); if(!b) return;
+  [...els.tabs.children].forEach(x=>x.classList.toggle('active', x===b));
+  const v = b.dataset.view;
+  ['focus','achievements','settings'].forEach(name=>{
+    $('#view-'+name).classList.toggle('show', name===v);
+  });
+});
+els.clearForest.addEventListener('click', ()=>{
+  if(state.forest.length===0) return;
+  if(!confirm('Clear your entire grove? This cannot be undone.')) return;
+  state.forest = []; save(); renderGrove(); renderStats();
+});
+
+// Settings inputs
+function applySettingsToUI(){
+  els.setFocus.value = state.settings.focus;
+  els.setShort.value = state.settings.short;
+  els.setLong.value  = state.settings.long;
+  els.setCycle.value = state.settings.cycle;
+  els.setGoal.value  = state.settings.goal;
+  els.setAutoBreak.classList.toggle('on', state.settings.autoBreak);
+  els.setAutoFocus.classList.toggle('on', state.settings.autoFocus);
+  els.setSound.classList.toggle('on', state.settings.sound);
+  els.setNotify.classList.toggle('on', state.settings.notify);
+  els.setSpecies.value = state.settings.species;
+  els.vol.value = Math.round(state.settings.volume*100);
+}
+function bindNum(el,key,min,max,opts={}){
+  el.addEventListener('change', ()=>{
+    let v = parseInt(el.value,10);
+    if(isNaN(v)) v = defaults.settings[key];
+    v = Math.max(min, Math.min(max, v));
+    el.value=v; state.settings[key]=v; save();
+    if(opts.affectsTimer && !running){ remaining=durationFor(mode); totalForSession=remaining; render(); }
+  });
+}
+bindNum(els.setFocus,'focus',1,120,{affectsTimer:true});
+bindNum(els.setShort,'short',1,60,{affectsTimer:true});
+bindNum(els.setLong,'long',1,60,{affectsTimer:true});
+bindNum(els.setCycle,'cycle',2,8);
+bindNum(els.setGoal,'goal',10,600);
+els.setGoal.addEventListener('change', renderStats);
+
+// Quick presets
+els.presets.addEventListener('click', e=>{
+  const b = e.target.closest('.preset'); if(!b) return;
+  if(running || remaining !== totalForSession){
+    toast('Reset the timer to change duration');
+    return;
+  }
+  const mins = parseInt(b.dataset.min,10);
+  state.settings.focus = mins;
+  els.setFocus.value = mins;
+  save();
+  if(mode==='focus'){
+    remaining = durationFor('focus');
+    totalForSession = remaining;
+  }
+  render();
+});
+const toggleBinding = (el,key)=>{ el.addEventListener('click', ()=>{ state.settings[key]=!state.settings[key]; el.classList.toggle('on', state.settings[key]); save(); }); };
+toggleBinding(els.setAutoBreak,'autoBreak');
+toggleBinding(els.setAutoFocus,'autoFocus');
+toggleBinding(els.setSound,'sound');
+toggleBinding(els.setNotify,'notify');
+els.setSpecies.addEventListener('change', ()=>{
+  state.settings.species = els.setSpecies.value; save();
+  if(!running){ regenTree(); renderTreeIdle(); }
+});
+els.vol.addEventListener('input', ()=>{
+  state.settings.volume = parseInt(els.vol.value,10)/100;
+  save(); updateVolume();
+});
+els.resetAll.addEventListener('click', ()=>{
+  if(!confirm('Wipe all data and reset to defaults?')) return;
+  localStorage.removeItem(LS_KEY);
+  state = load();
+  applySettingsToUI(); renderTasks(); renderGrove(); renderStats(); renderHeatmap(); renderAchievements();
+  setMode('focus');
+  toast('All data cleared');
+});
+
+els.addTaskBtn.addEventListener('click', addTask);
+els.taskInput.addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+
+// Keyboard
+document.addEventListener('keydown', e=>{
+  if(document.activeElement && (document.activeElement.tagName==='INPUT' || document.activeElement.tagName==='SELECT' || document.activeElement.tagName==='TEXTAREA')) return;
+  if(e.code==='Space'){ e.preventDefault(); running?pause():start(); }
+  else if(e.key==='r' || e.key==='R'){ reset(); }
+  else if(e.key==='s' || e.key==='S'){ skip(); }
+  else if(e.key==='f' || e.key==='F'){ toggleFocusMode(); }
+  else if(e.key==='Escape' && els.focusMode.classList.contains('on')){ toggleFocusMode(false); }
+});
+
+// Page lifecycle: if hidden during a focus session, keep ticking via timestamp end
+document.addEventListener('visibilitychange', ()=>{
+  if(running && !document.hidden){
+    remaining = Math.max(0, endAt - Date.now());
+    if(remaining<=0) complete();
+    else render();
+  }
+});
+
+// ============== INIT ==============
+applySettingsToUI();
+setMode('focus');
+renderTreeIdle();
+renderTasks();
+renderGrove();
+renderStats();
+renderHeatmap();
+renderAchievements();
+renderSounds();
+render();
+checkAchievements();
+
+})();
+</script>
+</body>
+</html>
