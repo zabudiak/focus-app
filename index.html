@@ -1232,7 +1232,42 @@
           </select>
         </div>
         <div class="field"><div><label>Reduced motion</label><span class="hint">Disable subtle animations</span></div><button class="toggle" id="setReducedMotion" aria-label="Reduced motion"></button></div>
-        <div class="field"><div><label>Day/night scene</label><span class="hint">Tint backdrop by local time</span></div><button class="toggle on" id="setDayNight" aria-label="Day/night cycle"></button></div>
+        <div class="field"><div><label>Focus background</label><span class="hint">Backdrop while focusing</span></div>
+          <select id="setBgFocus" aria-label="Focus background">
+            <option value="auto">Auto (time of day)</option>
+            <option value="forest">Forest</option>
+            <option value="ocean">Ocean</option>
+            <option value="lavender">Lavender</option>
+            <option value="sunset">Sunset</option>
+            <option value="slate">Slate</option>
+            <option value="rose">Rose</option>
+            <option value="amber">Amber</option>
+          </select>
+        </div>
+        <div class="field"><div><label>Short break background</label><span class="hint">Backdrop during short breaks</span></div>
+          <select id="setBgBreak" aria-label="Short break background">
+            <option value="auto">Auto (default)</option>
+            <option value="forest">Forest</option>
+            <option value="ocean">Ocean</option>
+            <option value="lavender">Lavender</option>
+            <option value="sunset">Sunset</option>
+            <option value="slate">Slate</option>
+            <option value="rose">Rose</option>
+            <option value="amber">Amber</option>
+          </select>
+        </div>
+        <div class="field"><div><label>Long break background</label><span class="hint">Backdrop during long breaks</span></div>
+          <select id="setBgLong" aria-label="Long break background">
+            <option value="auto">Auto (default)</option>
+            <option value="forest">Forest</option>
+            <option value="ocean">Ocean</option>
+            <option value="lavender">Lavender</option>
+            <option value="sunset">Sunset</option>
+            <option value="slate">Slate</option>
+            <option value="rose">Rose</option>
+            <option value="amber">Amber</option>
+          </select>
+        </div>
         <div class="field"><div><label>Pre-session intent</label><span class="hint">Ask what you're focusing on</span></div><button class="toggle on" id="setAskIntent" aria-label="Ask intent before session"></button></div>
         <div class="field"><div><label>Post-session reflection</label><span class="hint">Quick rating + note when done</span></div><button class="toggle on" id="setAskReflection" aria-label="Ask reflection after session"></button></div>
         <div class="field"><div><label>Pause grace window</label><span class="hint">Seconds of pause before tree wilts</span></div><input type="number" id="setPauseGrace" min="0" max="600" step="10" value="60"/></div>
@@ -1341,6 +1376,17 @@
 'use strict';
 // ============== STORAGE ==============
 const LS_KEY = 'grove.v2';
+// Curated background palettes. Each palette tints the scene-bg radials and base.
+const BG_PALETTES = {
+  auto:     { name:'Auto' },
+  forest:   { name:'Forest',   top1:'#1b3a2d', top2:'#1f3a48', bg1:'#0a0d0b', bg2:'#0c100e' },
+  ocean:    { name:'Ocean',    top1:'#1c3a55', top2:'#244055', bg1:'#0a0d10', bg2:'#0c1014' },
+  lavender: { name:'Lavender', top1:'#2e2347', top2:'#3a2c54', bg1:'#0a090e', bg2:'#0d0b12' },
+  sunset:   { name:'Sunset',   top1:'#3d2920', top2:'#3a1f2e', bg1:'#0e0a09', bg2:'#100b0c' },
+  slate:    { name:'Slate',    top1:'#1f242b', top2:'#262c34', bg1:'#0a0b0d', bg2:'#0c0d10' },
+  rose:     { name:'Rose',     top1:'#3a1d2e', top2:'#321e3a', bg1:'#0f0a0d', bg2:'#110b11' },
+  amber:    { name:'Amber',    top1:'#3a2a15', top2:'#2e3414', bg1:'#0e0c08', bg2:'#10100a' },
+};
 const defaults = {
   settings: {
     focus:25, short:5, long:15, cycle:4,
@@ -1352,7 +1398,9 @@ const defaults = {
     askIntent:true,
     askReflection:true,
     pauseGrace:60,
-    dayNight:true,
+    bgFocus:'auto',
+    bgBreak:'auto',
+    bgLong:'auto',
     reducedMotion:false,
   },
   stats: { totalMinutes:0, lastDate:null, streak:0, totalDistractions:0 },
@@ -1376,6 +1424,11 @@ function load(){
       settings.style = (sp === 'auto') ? 'tree:auto' : ('tree:' + sp);
     }
     delete settings.species;
+    // migrate v2: dayNight bool -> bgFocus palette. False = stay on Forest, true = Auto (time-of-day).
+    if (data.settings && 'dayNight' in data.settings && !data.settings.bgFocus){
+      settings.bgFocus = data.settings.dayNight ? 'auto' : 'forest';
+    }
+    delete settings.dayNight;
     // migrate v1: forest items without `mode` are legacy trees
     const forest = (data.forest||[]).map(t => ('mode' in t) ? t : {...t, mode:'tree'});
     return {
@@ -1432,7 +1485,8 @@ const els = {
   setFocus:$('#setFocus'), setShort:$('#setShort'), setLong:$('#setLong'), setCycle:$('#setCycle'), setGoal:$('#setGoal'),
   setAutoBreak:$('#setAutoBreak'), setAutoFocus:$('#setAutoFocus'),
   setSound:$('#setSound'), setNotify:$('#setNotify'), setStyle:$('#setStyle'),
-  setReducedMotion:$('#setReducedMotion'), setDayNight:$('#setDayNight'),
+  setReducedMotion:$('#setReducedMotion'),
+  setBgFocus:$('#setBgFocus'), setBgBreak:$('#setBgBreak'), setBgLong:$('#setBgLong'),
   setAskIntent:$('#setAskIntent'), setAskReflection:$('#setAskReflection'), setPauseGrace:$('#setPauseGrace'),
   resetAll:$('#resetAll'),
   // new feature elements
@@ -2979,21 +3033,36 @@ function renderWeek(){
 }
 
 // ============== DAY/NIGHT + SEASON ==============
-function applyDayNight(){
-  const root = document.body;
-  if(!state.settings.dayNight){
-    root.style.removeProperty('--bg-1');
-    root.style.removeProperty('--bg-2');
-    root.style.removeProperty('--bg-top-1');
-    root.style.removeProperty('--bg-top-2');
+function applyBackground(){
+  const body = document.body;
+  const isBreak = body.classList.contains('mode-break');
+  const isLong  = body.classList.contains('mode-long');
+  const settingKey = isLong ? 'bgLong' : isBreak ? 'bgBreak' : 'bgFocus';
+  const paletteKey = state.settings[settingKey] || 'auto';
+
+  // 'Auto' for break/long: let the CSS mode-break / mode-long rules apply (clear inline vars).
+  // 'Auto' for focus: apply the time-of-day palette below.
+  if(paletteKey === 'auto'){
+    body.style.removeProperty('--bg-1');
+    body.style.removeProperty('--bg-2');
+    body.style.removeProperty('--bg-top-1');
+    body.style.removeProperty('--bg-top-2');
+    if(isBreak || isLong) return;
+    applyTimeOfDay();
     return;
   }
-  if(document.body.classList.contains('mode-break') || document.body.classList.contains('mode-long')){
-    return; // mode-specific colors take over
-  }
+
+  const p = BG_PALETTES[paletteKey];
+  if(!p) return;
+  body.style.setProperty('--bg-1', p.bg1);
+  body.style.setProperty('--bg-2', p.bg2);
+  body.style.setProperty('--bg-top-1', p.top1);
+  body.style.setProperty('--bg-top-2', p.top2);
+}
+function applyTimeOfDay(){
+  const root = document.body;
   const h = new Date().getHours();
   const m = new Date().getMonth(); // 0-11
-  // Time-of-day palettes
   let bg1, bg2, top1, top2;
   if(h>=5 && h<8){ // dawn
     bg1 = '#1f2840'; bg2 = '#3a3548'; top1 = '#e8a87c'; top2 = '#6a8aa8';
@@ -3004,8 +3073,7 @@ function applyDayNight(){
   } else { // night
     bg1 = '#0f1d18'; bg2 = '#1a2e25'; top1 = '#2d5f49'; top2 = '#2a3f57';
   }
-  // Seasonal tint shift (very subtle)
-  // 0=winter (cool), 1=spring, 2=summer, 3=autumn
+  // Subtle seasonal tint
   const season = ((m+1)%12)<3 ? 0 : (m<6 ? 1 : (m<9 ? 2 : 3));
   if(season===3){ top1 = mixHex(top1, '#c47a4a', 0.4); }
   if(season===0){ top1 = mixHex(top1, '#8ab8d0', 0.3); bg2 = mixHex(bg2, '#3a4858', 0.2); }
@@ -3014,6 +3082,8 @@ function applyDayNight(){
   root.style.setProperty('--bg-top-1', top1);
   root.style.setProperty('--bg-top-2', top2);
 }
+// Alias for legacy call sites
+const applyDayNight = applyBackground;
 function mixHex(a,b,t){
   const pa = a.replace('#',''), pb = b.replace('#','');
   const ai = parseInt(pa,16), bi = parseInt(pb,16);
@@ -3160,7 +3230,9 @@ function applySettingsToUI(){
   els.setSound.classList.toggle('on', state.settings.sound);
   els.setNotify.classList.toggle('on', state.settings.notify);
   els.setReducedMotion.classList.toggle('on', state.settings.reducedMotion);
-  els.setDayNight.classList.toggle('on', state.settings.dayNight);
+  els.setBgFocus.value = state.settings.bgFocus || 'auto';
+  els.setBgBreak.value = state.settings.bgBreak || 'auto';
+  els.setBgLong.value  = state.settings.bgLong  || 'auto';
   els.setAskIntent.classList.toggle('on', state.settings.askIntent);
   els.setAskReflection.classList.toggle('on', state.settings.askReflection);
   els.setPauseGrace.value = state.settings.pauseGrace;
@@ -3220,7 +3292,16 @@ toggleBinding(els.setAutoFocus,'autoFocus');
 toggleBinding(els.setSound,'sound');
 toggleBinding(els.setNotify,'notify');
 toggleBinding(els.setReducedMotion,'reducedMotion', applyReducedMotion);
-toggleBinding(els.setDayNight,'dayNight', applyDayNight);
+function bindBgSelect(el, key){
+  el.addEventListener('change', ()=>{
+    state.settings[key] = el.value;
+    save();
+    applyBackground();
+  });
+}
+bindBgSelect(els.setBgFocus, 'bgFocus');
+bindBgSelect(els.setBgBreak, 'bgBreak');
+bindBgSelect(els.setBgLong,  'bgLong');
 toggleBinding(els.setAskIntent,'askIntent');
 toggleBinding(els.setAskReflection,'askReflection');
 els.setStyle.addEventListener('change', ()=>{
