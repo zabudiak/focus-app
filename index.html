@@ -910,6 +910,119 @@
     transition:all .2s;font-family:var(--font-mono);
   }
   .help-btn:hover{color:var(--ink);background:rgba(255,255,255,.08)}
+
+  /* ============== MOBILE PASS ============== */
+  @media (max-width: 600px){
+    /* Tighter outer padding and inter-card gap */
+    .app{
+      padding:14px 14px calc(80px + env(safe-area-inset-bottom, 0px));
+      gap:14px;
+    }
+    /* Hide the giant footer quote */
+    footer{display:none}
+
+    /* Header: just logo + help button. Tabs move to bottom. */
+    header{margin-bottom:0;gap:8px}
+    .brand .title{font-size:20px}
+    .logo{width:32px;height:32px;border-radius:9px}
+    .logo svg{width:20px;height:20px}
+
+    /* Bottom tab bar — sticky to the viewport bottom, iOS-style */
+    .tabs{
+      position:fixed;
+      left:0;right:0;bottom:0;
+      margin:0;
+      gap:0;padding:6px 12px;
+      padding-bottom:calc(6px + env(safe-area-inset-bottom, 0px));
+      border-radius:0;
+      background:rgba(14,16,18,.78);
+      backdrop-filter:blur(30px) saturate(180%);
+      -webkit-backdrop-filter:blur(30px) saturate(180%);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 -8px 24px rgba(0,0,0,.30);
+      display:flex;justify-content:space-around;
+      z-index:200;
+    }
+    .tab{
+      flex:1;padding:10px 8px;border-radius:10px;font-size:12px;text-align:center;
+      letter-spacing:-.1px;
+    }
+    .tab.active{
+      background:rgba(255,255,255,.08);
+    }
+
+    /* Card padding tighter on mobile */
+    .card{padding:18px 16px;border-radius:18px}
+
+    /* Cards: smaller radius, lighter weight title */
+    .card-title{font-size:14px;margin-bottom:12px}
+
+    /* Timer: slimmer ring, smaller digits, tighter vertical rhythm */
+    .timer-card{gap:14px}
+    .ring-wrap{width:min(280px,68vw)}
+    .time{font-size:clamp(54px,16vw,72px);letter-spacing:-2px}
+    .session-meta{font-size:11px}
+    .session-task{font-size:12px;max-width:78vw}
+    .next-hint{font-size:10px}
+    .controls{gap:6px}
+    button.btn{height:40px;padding:0 14px;font-size:13px}
+    button.btn.primary{padding:0 22px;height:42px}
+
+    /* Mode switch: stretch to full width on mobile so taps are big */
+    .mode-switch{width:100%;justify-content:stretch}
+    .mode-switch button{flex:1;padding:9px 8px;font-size:12.5px}
+
+    /* Scene card: collapse when idle. Expand when running. */
+    .scene-stage{min-height:180px;transition:min-height .35s ease}
+    body.running .scene-stage{min-height:380px}
+    .tree-svg{margin-bottom:8px}
+    /* When idle, the sapling sits closer to its label */
+    body:not(.running) .scene-stage .tree-mount{height:100%}
+
+    /* Stat rows: tighter padding */
+    .stat-row{padding:10px 14px}
+    .stat-row .v{font-size:16px}
+    .stat-row .l{font-size:12px;gap:7px}
+    .week-stat{padding:11px 13px}
+    .week-stat .v{font-size:18px}
+
+    /* Sounds: 2 columns already; tighten button padding */
+    .sound{padding:9px 10px;font-size:12px}
+
+    /* Heatmap: horizontal scroll with edge fade hint */
+    .heat-card{
+      padding:18px 0 18px 16px;
+    }
+    .heat-card .heat-head{padding-right:16px}
+    .heat-grid{
+      overflow-x:auto;
+      padding-right:24px;
+      mask-image:linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent 100%);
+      -webkit-mask-image:linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent 100%);
+      scrollbar-width:none;
+    }
+    .heat-grid::-webkit-scrollbar{display:none}
+    .heat-grid > *{flex-shrink:0}
+
+    /* Task list: a touch tighter */
+    .task{padding:10px 12px}
+    .add-task .input{font-size:14px}
+
+    /* Settings: stack labels above their input on mobile for more room */
+    .field{flex-direction:column;align-items:stretch;gap:8px}
+    .field > div{gap:2px}
+    .field select, .field input{width:100%}
+
+    /* Modals: full-bleed on small screens */
+    .modal{max-width:none;width:calc(100vw - 28px);margin:0 14px;border-radius:16px}
+    .modal-back{padding:14px}
+  }
+
+  /* Even tighter on very small phones */
+  @media (max-width: 380px){
+    .ring-wrap{width:min(240px,70vw)}
+    .time{font-size:54px}
+    .tab{font-size:11px;padding:9px 6px}
+  }
 </style>
 </head>
 <body>
