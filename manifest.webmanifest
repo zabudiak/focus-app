@@ -1,0 +1,25 @@
+{
+  "name": "Grove · Focus",
+  "short_name": "Grove",
+  "description": "A quiet focus timer. Plant a tree, work without distraction, and grow a grove over time.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#0a1612",
+  "theme_color": "#142420",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%23142420'/%3E%3Cpath d='M96 36c-21 21-30 39-30 57a30 30 0 0 0 60 0c0-18-9-36-30-57z' fill='%237fc89a'/%3E%3Crect x='90' y='120' width='12' height='42' rx='3' fill='%234a3424'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23142420'/%3E%3Cpath d='M256 96c-56 56-80 104-80 152a80 80 0 0 0 160 0c0-48-24-96-80-152z' fill='%237fc89a'/%3E%3Crect x='240' y='320' width='32' height='112' rx='8' fill='%234a3424'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

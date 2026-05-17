@@ -15,6 +15,8 @@
 <meta name="twitter:description" content="A quiet focus timer. Plant a tree, work without distraction, and grow a grove over time." />
 <meta name="twitter:image" content="/og.svg" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23142420'/%3E%3Cpath d='M32 12c-7 7-10 13-10 19a10 10 0 0 0 20 0c0-6-3-12-10-19z' fill='%237fc89a'/%3E%3Crect x='30' y='40' width='4' height='14' rx='1' fill='%234a3424'/%3E%3C/svg%3E" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23142420'/%3E%3Cpath d='M32 12c-7 7-10 13-10 19a10 10 0 0 0 20 0c0-6-3-12-10-19z' fill='%237fc89a'/%3E%3Crect x='30' y='40' width='4' height='14' rx='1' fill='%234a3424'/%3E%3C/svg%3E" />
 <style>
   /* ============== DESIGN TOKENS ============== */
   :root{
@@ -688,6 +690,147 @@
   /* hide scrollbar on horizontal heatmap on mobile-ish */
   .heat-grid::-webkit-scrollbar{height:6px}
   .heat-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+
+  /* ============== MODAL (intent / reflection / help) ============== */
+  .modal-back{
+    position:fixed;inset:0;z-index:400;background:rgba(8,16,12,.7);
+    backdrop-filter:blur(10px);
+    display:none;align-items:center;justify-content:center;
+    animation:fadein .25s ease;
+    padding:20px;
+  }
+  .modal-back.show{display:flex}
+  .modal{
+    background:linear-gradient(180deg, rgba(30,46,38,.98), rgba(20,32,26,.98));
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:18px;padding:24px;
+    box-shadow:var(--shadow-lg);
+    max-width:440px;width:100%;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .modal .m-title{
+    font-family:var(--font-display);font-size:22px;font-weight:500;
+    color:var(--ink);letter-spacing:.3px;
+  }
+  .modal .m-sub{color:var(--ink-dim);font-size:13px;margin-top:-6px}
+  .modal textarea{
+    background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);
+    color:var(--ink);font:inherit;font-size:14px;
+    padding:11px 14px;border-radius:11px;outline:none;
+    resize:vertical;min-height:60px;font-family:var(--font-body);
+  }
+  .modal textarea:focus{border-color:rgba(155,224,179,.4)}
+  .modal .rating{display:flex;gap:6px;justify-content:center;margin:4px 0}
+  .modal .rating button{
+    width:46px;height:46px;border-radius:12px;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+    color:var(--ink-soft);font:inherit;font-size:18px;cursor:pointer;
+    transition:all .15s;
+  }
+  .modal .rating button:hover{background:rgba(255,255,255,.08);color:var(--ink)}
+  .modal .rating button.on{
+    background:rgba(155,224,179,.18);border-color:rgba(155,224,179,.4);color:var(--ink);
+    transform:translateY(-2px);
+  }
+  .modal .m-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap}
+
+  /* Help overlay specific */
+  .help-grid{display:grid;grid-template-columns:auto 1fr;gap:8px 18px;align-items:center;margin-top:4px}
+  .help-grid .kbd{margin:0}
+  .help-grid .desc{color:var(--ink-soft);font-size:13px}
+
+  /* ============== DISTRACT BUTTON ============== */
+  .distract-btn{
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+    color:var(--ink-soft);font:inherit;font-size:12px;
+    padding:6px 12px;border-radius:9px;cursor:pointer;
+    display:none;align-items:center;gap:6px;letter-spacing:.2px;
+    transition:all .2s;
+  }
+  body.running .distract-btn{display:inline-flex}
+  .distract-btn:hover{background:rgba(224,133,133,.12);border-color:rgba(224,133,133,.3);color:#ffc8c8}
+  .distract-btn .count{
+    background:rgba(255,255,255,.08);padding:1px 6px;border-radius:6px;font-size:11px;
+    font-family:var(--font-mono);
+  }
+  .distract-btn.flash{animation:distractflash .5s ease}
+  @keyframes distractflash{0%{transform:scale(1)}40%{transform:scale(1.15);background:rgba(224,133,133,.25)}100%{transform:scale(1)}}
+
+  /* ============== WILT VISUAL ============== */
+  .tree-svg.wilted{filter:saturate(.4) hue-rotate(-20deg)}
+
+  /* ============== WEEKLY SUMMARY ============== */
+  .week-grid{
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));gap:10px;
+  }
+  .week-stat{
+    padding:12px 14px;border-radius:12px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+  }
+  .week-stat .l{font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-dim);margin-bottom:6px}
+  .week-stat .v{font-family:var(--font-display);font-size:22px;font-weight:500;color:var(--ink);line-height:1.1}
+  .week-stat .s{font-size:12px;color:var(--ink-soft);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* ============== TASK ESTIMATES ============== */
+  .task .est{
+    color:var(--ink-dim);font-size:11px;font-family:var(--font-mono);
+    padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.04);
+    margin-left:auto;flex-shrink:0;
+  }
+  .task .est.done{color:var(--accent);background:rgba(155,224,179,.1)}
+  .add-task .est-in{
+    width:54px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.06);
+    color:var(--ink);font:inherit;font-size:13px;font-family:var(--font-mono);
+    padding:10px 8px;border-radius:11px;outline:none;text-align:center;
+  }
+  .add-task .est-in::placeholder{color:var(--ink-faint)}
+  .add-task .est-in:focus{border-color:rgba(155,224,179,.4)}
+
+  /* ============== SOUND MIXER ============== */
+  .sound{flex-wrap:wrap}
+  .sound .smix{
+    flex-basis:100%;height:3px;border-radius:2px;margin-top:8px;
+    -webkit-appearance:none;appearance:none;
+    background:rgba(255,255,255,.08);outline:none;
+    display:none;
+  }
+  .sound.on .smix{display:block}
+  .sound .smix::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:11px;height:11px;border-radius:50%;background:var(--accent);cursor:pointer;
+  }
+  .sound .smix::-moz-range-thumb{width:11px;height:11px;border:0;border-radius:50%;background:var(--accent);cursor:pointer}
+
+  /* ============== SETTINGS export/import ============== */
+  .data-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ============== SPECIES LOCK ============== */
+  select option:disabled{color:var(--ink-faint)}
+  .species-locked-hint{font-size:11px;color:var(--ink-faint);margin-top:4px;font-style:italic}
+
+  /* ============== REDUCED MOTION ============== */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration:.001ms !important;animation-iteration-count:1 !important;
+      transition-duration:.05ms !important;
+    }
+    .firefly, .pollen i, .star{animation:none !important;opacity:.3}
+    .tree-svg{animation:none}
+  }
+  body.reduced-motion .firefly,
+  body.reduced-motion .pollen,
+  body.reduced-motion .stars .star{animation:none !important}
+  body.reduced-motion .tree-svg{animation:none}
+  body.reduced-motion .ring-pulse{animation:none}
+
+  /* ============== HELP BUTTON ============== */
+  .help-btn{
+    width:32px;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.04);color:var(--ink-soft);cursor:pointer;
+    display:grid;place-items:center;font:inherit;font-size:14px;font-weight:600;
+    transition:all .2s;font-family:var(--font-mono);
+  }
+  .help-btn:hover{color:var(--ink);background:rgba(255,255,255,.08)}
 </style>
 </head>
 <body>
@@ -732,11 +875,14 @@
         <span class="sub">Focus · Grow · Bloom</span>
       </div>
     </div>
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-view="focus">Focus</button>
-      <button class="tab" data-view="achievements">Achievements</button>
-      <button class="tab" data-view="settings">Settings</button>
-    </nav>
+    <div style="display:flex;align-items:center;gap:10px">
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-view="focus">Focus</button>
+        <button class="tab" data-view="achievements">Achievements</button>
+        <button class="tab" data-view="settings">Settings</button>
+      </nav>
+      <button class="help-btn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+    </div>
   </header>
 
   <!-- ===== Focus view ===== -->
@@ -763,10 +909,10 @@
                     stroke-dasharray="578.05" stroke-dashoffset="0"/>
           </svg>
           <div class="ring-center">
-            <div class="time" id="time">25:00</div>
+            <div class="time" id="time" role="timer" aria-live="polite" aria-atomic="true">25:00</div>
             <div class="session-meta" id="meta">Ready to focus</div>
             <div class="session-task" id="sessionTask"></div>
-            <div class="dots" id="dots"></div>
+            <div class="dots" id="dots" aria-hidden="true"></div>
             <div class="next-hint" id="nextHint"></div>
           </div>
         </div>
@@ -780,17 +926,21 @@
         </div>
 
         <div class="controls">
-          <button class="btn primary" id="startBtn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <button class="btn primary" id="startBtn" aria-label="Start or pause timer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
             <span id="startLabel">Start</span>
           </button>
-          <button class="btn ghost" id="resetBtn">Reset</button>
-          <button class="btn ghost danger" id="skipBtn">Skip</button>
-          <button class="btn ghost" id="focusModeBtn" title="Enter focus mode (F)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9V5a2 2 0 0 1 2-2h4M21 9V5a2 2 0 0 0-2-2h-4M3 15v4a2 2 0 0 0 2 2h4M21 15v4a2 2 0 0 1-2 2h-4"/></svg>
+          <button class="btn ghost" id="resetBtn" aria-label="Reset timer">Reset</button>
+          <button class="btn ghost danger" id="skipBtn" aria-label="Skip current session">Skip</button>
+          <button class="btn ghost" id="focusModeBtn" title="Enter focus mode (F)" aria-label="Enter full-screen focus mode">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9V5a2 2 0 0 1 2-2h4M21 9V5a2 2 0 0 0-2-2h-4M3 15v4a2 2 0 0 0 2 2h4M21 15v4a2 2 0 0 1-2 2h-4"/></svg>
+          </button>
+          <button class="distract-btn" id="distractBtn" title="I got distracted (D)" aria-label="Mark a distraction">
+            <span>distracted</span>
+            <span class="count" id="distractCount">0</span>
           </button>
         </div>
-        <div class="kbd-hint"><span class="kbd">Space</span> start/pause <span class="kbd">R</span> reset <span class="kbd">F</span> focus mode</div>
+        <div class="kbd-hint"><span class="kbd">Space</span> start/pause <span class="kbd">R</span> reset <span class="kbd">F</span> focus mode <span class="kbd">?</span> all shortcuts</div>
       </div>
 
       <div class="card scene-card">
@@ -825,9 +975,10 @@
           Today's Tasks
         </div>
         <div class="add-task">
-          <input class="input" id="taskInput" type="text" maxlength="80" placeholder="What are you focusing on?" />
-          <button class="add-btn" id="addTaskBtn" title="Add task">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          <input class="input" id="taskInput" type="text" maxlength="80" placeholder="What are you focusing on?" aria-label="Task name" />
+          <input class="est-in" id="taskEst" type="number" min="1" max="20" placeholder="🌱" title="Estimated pomodoros" aria-label="Estimated pomodoros (optional)" />
+          <button class="add-btn" id="addTaskBtn" title="Add task" aria-label="Add task">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
           </button>
         </div>
         <div class="task-list" id="taskList"></div>
@@ -880,6 +1031,16 @@
           <div class="goal-bar"><div class="goal-fill" id="goalFill"></div></div>
         </div>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+        </span>
+        Last 7 days
+      </div>
+      <div class="week-grid" id="weekGrid"></div>
     </div>
 
     <div class="card heat-card">
@@ -964,16 +1125,36 @@
         <div class="field"><div><label>Completion chime</label><span class="hint">Soft bell when session ends</span></div><button class="toggle on" id="setSound"></button></div>
         <div class="field"><div><label>Desktop notifications</label><span class="hint">Notify on completion</span></div><button class="toggle on" id="setNotify"></button></div>
         <div class="field"><div><label>Tree species</label><span class="hint">What you plant when you focus</span></div>
-          <select id="setSpecies">
+          <select id="setSpecies" aria-label="Tree species">
             <option value="auto">Auto / random</option>
             <option value="oak">Oak</option>
             <option value="cherry">Cherry blossom</option>
             <option value="pine">Pine</option>
-            <option value="willow">Willow</option>
+            <option value="willow">Willow · 7-day streak</option>
+            <option value="maple">Maple · plant 25 trees</option>
           </select>
         </div>
+        <div class="field"><div><label>Reduced motion</label><span class="hint">Disable subtle animations</span></div><button class="toggle" id="setReducedMotion" aria-label="Reduced motion"></button></div>
+        <div class="field"><div><label>Day/night scene</label><span class="hint">Tint backdrop by local time</span></div><button class="toggle on" id="setDayNight" aria-label="Day/night cycle"></button></div>
+        <div class="field"><div><label>Pre-session intent</label><span class="hint">Ask what you're focusing on</span></div><button class="toggle on" id="setAskIntent" aria-label="Ask intent before session"></button></div>
+        <div class="field"><div><label>Post-session reflection</label><span class="hint">Quick rating + note when done</span></div><button class="toggle on" id="setAskReflection" aria-label="Ask reflection after session"></button></div>
+        <div class="field"><div><label>Pause grace window</label><span class="hint">Seconds of pause before tree wilts</span></div><input type="number" id="setPauseGrace" min="0" max="600" step="10" value="60"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        </span>
+        Data
+      </div>
+      <div class="settings-grid">
+        <div class="field"><div><label>Export grove</label><span class="hint">Download all data as JSON</span></div><button class="btn ghost" id="exportBtn">Export</button></div>
+        <div class="field"><div><label>Import grove</label><span class="hint">Restore from a JSON backup</span></div><button class="btn ghost" id="importBtn">Import</button></div>
         <div class="field"><div><label>Reset all data</label><span class="hint">Clears grove, stats, achievements</span></div><button class="btn danger" id="resetAll">Reset</button></div>
       </div>
+      <input type="file" id="importFile" accept="application/json" style="display:none"/>
     </div>
   </section>
 
@@ -990,6 +1171,61 @@
   <div class="controls">
     <button class="btn primary" id="startBtnXL"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> <span id="startLabelXL">Start</span></button>
     <button class="btn ghost" id="resetBtnXL">Reset</button>
+  </div>
+</div>
+
+<!-- Intent modal -->
+<div class="modal-back" id="intentModal" role="dialog" aria-modal="true" aria-labelledby="intentTitle">
+  <div class="modal">
+    <div class="m-title" id="intentTitle">What are you focusing on?</div>
+    <div class="m-sub">One line. You can leave it blank.</div>
+    <textarea id="intentText" rows="2" maxlength="160" placeholder="e.g. Draft the design spec…" aria-label="Session intent"></textarea>
+    <div class="m-actions">
+      <button class="btn ghost" id="intentSkip">Skip</button>
+      <button class="btn primary" id="intentGo">Start focusing</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reflection modal -->
+<div class="modal-back" id="reflectModal" role="dialog" aria-modal="true" aria-labelledby="reflectTitle">
+  <div class="modal">
+    <div class="m-title" id="reflectTitle">🌳 Tree planted</div>
+    <div class="m-sub" id="reflectSub">How did that session feel?</div>
+    <div class="rating" id="reflectRating" role="radiogroup" aria-label="Session quality 1 to 5">
+      <button data-r="1" aria-label="1 of 5">😴</button>
+      <button data-r="2" aria-label="2 of 5">😐</button>
+      <button data-r="3" aria-label="3 of 5">🙂</button>
+      <button data-r="4" aria-label="4 of 5">😊</button>
+      <button data-r="5" aria-label="5 of 5">🤩</button>
+    </div>
+    <textarea id="reflectText" rows="2" maxlength="280" placeholder="A note for future-you (optional)…" aria-label="Reflection note"></textarea>
+    <div class="m-actions">
+      <button class="btn ghost" id="reflectSkip">Skip</button>
+      <button class="btn primary" id="reflectSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help modal -->
+<div class="modal-back" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal">
+    <div class="m-title" id="helpTitle">Keyboard shortcuts</div>
+    <div class="help-grid">
+      <span class="kbd">Space</span><span class="desc">Start / pause timer</span>
+      <span class="kbd">R</span><span class="desc">Reset session</span>
+      <span class="kbd">S</span><span class="desc">Skip current session</span>
+      <span class="kbd">F</span><span class="desc">Toggle full-screen focus mode</span>
+      <span class="kbd">D</span><span class="desc">Mark a distraction</span>
+      <span class="kbd">1</span><span class="desc">Focus mode</span>
+      <span class="kbd">2</span><span class="desc">Short break</span>
+      <span class="kbd">3</span><span class="desc">Long break</span>
+      <span class="kbd">Esc</span><span class="desc">Close overlay / modal</span>
+      <span class="kbd">?</span><span class="desc">Show this help</span>
+    </div>
+    <div class="m-actions">
+      <button class="btn primary" id="helpClose">Got it</button>
+    </div>
   </div>
 </div>
 
@@ -1016,14 +1252,20 @@ const defaults = {
     species:'auto',
     volume:0.4,
     goal:120,
+    askIntent:true,
+    askReflection:true,
+    pauseGrace:60,
+    dayNight:true,
+    reducedMotion:false,
   },
-  stats: { totalMinutes:0, lastDate:null, streak:0 },
+  stats: { totalMinutes:0, lastDate:null, streak:0, totalDistractions:0 },
   forest: [],
   tasks: [],
   activeTaskId: null,
   pomodorosThisCycle: 0,
   achievements: {},
   daily: {}, // date -> minutes
+  soundMix: {}, // sound id -> per-track volume 0..1
 };
 function load(){
   try{
@@ -1039,6 +1281,7 @@ function load(){
       tasks:data.tasks||[],
       achievements:data.achievements||{},
       daily:data.daily||{},
+      soundMix:data.soundMix||{},
     };
   }catch(e){ return structuredClone(defaults); }
 }
@@ -1082,14 +1325,28 @@ const els = {
   setFocus:$('#setFocus'), setShort:$('#setShort'), setLong:$('#setLong'), setCycle:$('#setCycle'), setGoal:$('#setGoal'),
   setAutoBreak:$('#setAutoBreak'), setAutoFocus:$('#setAutoFocus'),
   setSound:$('#setSound'), setNotify:$('#setNotify'), setSpecies:$('#setSpecies'),
+  setReducedMotion:$('#setReducedMotion'), setDayNight:$('#setDayNight'),
+  setAskIntent:$('#setAskIntent'), setAskReflection:$('#setAskReflection'), setPauseGrace:$('#setPauseGrace'),
   resetAll:$('#resetAll'),
+  // new feature elements
+  helpBtn:$('#helpBtn'), helpModal:$('#helpModal'), helpClose:$('#helpClose'),
+  intentModal:$('#intentModal'), intentText:$('#intentText'), intentSkip:$('#intentSkip'), intentGo:$('#intentGo'),
+  reflectModal:$('#reflectModal'), reflectText:$('#reflectText'), reflectRating:$('#reflectRating'),
+  reflectSkip:$('#reflectSkip'), reflectSave:$('#reflectSave'), reflectSub:$('#reflectSub'),
+  distractBtn:$('#distractBtn'), distractCount:$('#distractCount'),
+  weekGrid:$('#weekGrid'),
+  taskEst:$('#taskEst'),
+  exportBtn:$('#exportBtn'), importBtn:$('#importBtn'), importFile:$('#importFile'),
 };
 
 // ============== BACKGROUND SCENE ==============
 function buildScene(){
-  // stars
+  const prefersReduced = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || state.settings.reducedMotion;
+  const starCount = prefersReduced ? 30 : 70;
+  const fireflyCount = prefersReduced ? 0 : 14;
+  const pollenCount = prefersReduced ? 0 : 22;
   const stars = $('#stars');
-  for(let i=0;i<70;i++){
+  for(let i=0;i<starCount;i++){
     const s = document.createElement('div');
     s.className='star';
     s.style.left = Math.random()*100+'%';
@@ -1099,9 +1356,8 @@ function buildScene(){
     s.style.width = s.style.height = (Math.random()<.15 ? '3px':'2px');
     stars.appendChild(s);
   }
-  // fireflies
   const ff = $('#fireflies');
-  for(let i=0;i<14;i++){
+  for(let i=0;i<fireflyCount;i++){
     const f = document.createElement('div');
     f.className='firefly';
     f.style.left = (10+Math.random()*80)+'%';
@@ -1112,9 +1368,8 @@ function buildScene(){
     f.style.animationDuration = (8+Math.random()*8)+'s';
     ff.appendChild(f);
   }
-  // pollen / particles
   const p = $('#pollen');
-  for(let i=0;i<22;i++){
+  for(let i=0;i<pollenCount;i++){
     const x = document.createElement('i');
     x.style.left = (Math.random()*100)+'%';
     x.style.animationDuration = (20+Math.random()*30)+'s';
@@ -1159,10 +1414,32 @@ const SPECIES = {
     initLen:55, maxDepth:7, splitChance:.65, triSplitChance:.15,
     leafShape:'droop', leafSize:[3,7],
   },
+  maple: {
+    name:'Maple',
+    palette:{trunk:'#4a2a1c',trunkDark:'#2a160d',leaf1:'#e88c4a',leaf2:'#c45a1f',leaf3:'#f0b07a',accent:'#fcd6a8'},
+    branchAngle:[.4,.75], lenFactor:[.7,.85], thicknessFactor:.7,
+    initLen:60, maxDepth:7, splitChance:.6, triSplitChance:.2,
+    leafShape:'cluster', leafSize:[6,10],
+  },
 };
 
+const SPECIES_UNLOCKS = {
+  oak: null, cherry: null, pine: null,
+  willow: { type:'streak', threshold:7, label:'Reach a 7-day streak' },
+  maple:  { type:'trees',  threshold:25, label:'Plant 25 trees' },
+};
+function speciesUnlocked(key){
+  const u = SPECIES_UNLOCKS[key];
+  if(!u) return true;
+  if(u.type==='streak') return state.stats.streak >= u.threshold;
+  if(u.type==='trees')  return state.forest.filter(t=>!t.dead).length >= u.threshold;
+  return true;
+}
+function availableSpecies(){
+  return Object.keys(SPECIES).filter(speciesUnlocked);
+}
 function pickSpecies(seed){
-  const list = ['oak','cherry','pine','willow'];
+  const list = availableSpecies();
   return list[Math.floor(rng(seed+71)()*list.length)];
 }
 
@@ -1298,9 +1575,28 @@ let endAt = null;
 let remaining = 0;
 let totalForSession = 0;
 let tickHandle = null;
-let currentSpecies = state.settings.species==='auto' ? pickSpecies(Date.now()) : state.settings.species;
+let sessionDistractions = 0;
+let sessionIntent = '';
+let pausedAt = null;        // ms timestamp when paused began
+let pausedTotal = 0;        // accumulated paused ms during this focus session
+let sessionStartedAt = null;
+function resolveSpecies(){
+  const s = state.settings.species;
+  if(s==='auto' || !speciesUnlocked(s)) return pickSpecies(Date.now());
+  return s;
+}
+let currentSpecies = resolveSpecies();
 let currentTreeSeed = Date.now();
 let currentTree = generateTree(currentSpecies, currentTreeSeed);
+
+function wiltFraction(){
+  const grace = (state.settings.pauseGrace||0)*1000;
+  let p = pausedTotal;
+  if(pausedAt) p += Math.max(0, Date.now()-pausedAt);
+  if(p<=grace) return 0;
+  // 1 minute past grace = 25% wilt; cap at 1
+  return Math.min(1, (p-grace) / (4*60*1000));
+}
 
 function durationFor(m){ return state.settings[m] * 60 * 1000; }
 
@@ -1308,6 +1604,7 @@ function setMode(m){
   mode = m;
   document.body.classList.toggle('mode-break', m==='short');
   document.body.classList.toggle('mode-long', m==='long');
+  applyDayNight();
   [...els.modeSwitch.querySelectorAll('button')].forEach(b=>{
     b.classList.toggle('active', b.dataset.mode===m);
   });
@@ -1326,7 +1623,7 @@ function setMode(m){
 }
 
 function regenTree(){
-  currentSpecies = state.settings.species==='auto' ? pickSpecies(Date.now()) : state.settings.species;
+  currentSpecies = resolveSpecies();
   currentTreeSeed = Date.now() + Math.floor(Math.random()*99999);
   currentTree = generateTree(currentSpecies, currentTreeSeed);
 }
@@ -1366,8 +1663,9 @@ function render(){
   const C = 2 * Math.PI * 92;
   els.ring.setAttribute('stroke-dasharray', C);
   els.ring.setAttribute('stroke-dashoffset', (C * (1 - frac)).toFixed(2));
+  const modeBadge = mode==='focus' ? '🍃' : (mode==='long' ? '☕' : '⏸');
   document.title = (running||remaining<totalForSession)
-    ? `${formatTime(remaining)} · Grove`
+    ? `${modeBadge} ${formatTime(remaining)} · Grove`
     : 'Grove · Focus';
   if(mode==='focus'){
     renderTree(frac);
@@ -1376,6 +1674,7 @@ function render(){
   renderNextHint();
   renderPresetsActive();
   document.body.classList.toggle('running', running);
+  els.distractCount.textContent = sessionDistractions;
 }
 
 function renderNextHint(){
@@ -1399,25 +1698,44 @@ function renderPresetsActive(){
   els.presets.style.display = (mode==='focus' && fresh) ? '' : 'none';
 }
 
-function start(){
-  if(running) return;
+function actuallyStart(){
   running = true;
   if(remaining<=0) remaining = durationFor(mode);
   endAt = Date.now() + remaining;
   setStartLabel('Pause', true);
-  if(mode==='focus' && remaining===totalForSession){
+  const fresh = remaining===totalForSession;
+  if(mode==='focus' && fresh){
     regenTree();
+    sessionDistractions = 0;
+    pausedAt = null;
+    pausedTotal = 0;
+    sessionStartedAt = Date.now();
     els.treeStatus.textContent = 'Seed planted. Keep focusing 🌱';
   }
   tickHandle = setInterval(tick, 250);
   ensureNotifyPermission();
+  notifySessionStart();
   save();
+}
+function start(){
+  if(running) return;
+  const fresh = remaining===totalForSession || remaining<=0;
+  if(mode==='focus' && fresh && state.settings.askIntent){
+    openIntent();
+    return;
+  }
+  if(mode==='focus' && pausedAt){
+    pausedTotal += Date.now()-pausedAt;
+    pausedAt = null;
+  }
+  actuallyStart();
 }
 function pause(){
   if(!running) return;
   running = false;
   remaining = Math.max(0, endAt - Date.now());
   clearInterval(tickHandle); tickHandle=null;
+  if(mode==='focus'){ pausedAt = Date.now(); }
   setStartLabel('Resume', false);
   render();
 }
@@ -1425,13 +1743,15 @@ function reset(){
   const wasInProgress = (running || remaining<totalForSession) && remaining>0;
   if(wasInProgress && mode==='focus'){
     const minutes = Math.max(1, Math.round((totalForSession - remaining)/60000));
-    addToForest({minutes, dead:true, species:currentSpecies, seed:currentTreeSeed});
+    addToForest({minutes, dead:true, species:currentSpecies, seed:currentTreeSeed,
+      distractions:sessionDistractions, intent:sessionIntent, wilt:1});
     toast('🥀 Your tree withered. Start fresh anytime');
   }
   running = false;
   clearInterval(tickHandle); tickHandle=null;
   remaining = durationFor(mode);
   totalForSession = remaining;
+  sessionDistractions = 0; sessionIntent = ''; pausedAt=null; pausedTotal=0; sessionStartedAt=null;
   setStartLabel('Start', false);
   if(mode==='focus'){
     regenTree();
@@ -1445,6 +1765,7 @@ function skip(){
     if(frac >= 0.5){
       const minutes = Math.max(1, Math.round((totalForSession - remaining)/60000));
       completeFocus(minutes);
+      return;
     } else {
       toast('Skipped. Not enough focus to grow a tree');
     }
@@ -1463,32 +1784,41 @@ function complete(){
   if(state.settings.notify) notifyComplete(mode);
   if(mode==='focus'){
     completeFocus(state.settings.focus);
-  } else {
-    toast(mode==='long' ? '🌿 Back to it. Focus time' : '🌿 Break over');
+    return;
   }
+  toast(mode==='long' ? '🌿 Back to it. Focus time' : '🌿 Break over');
   nextMode();
 }
 function completeFocus(minutes){
   state.pomodorosThisCycle = (state.pomodorosThisCycle+1) % state.settings.cycle;
   state.stats.totalMinutes += minutes;
+  state.stats.totalDistractions = (state.stats.totalDistractions||0) + sessionDistractions;
   const t = todayStr();
   state.daily[t] = (state.daily[t]||0) + minutes;
-  // streak
   if(state.stats.lastDate !== t){
     const y = new Date(); y.setDate(y.getDate()-1);
     const yest = localDateStr(y);
     state.stats.streak = (state.stats.lastDate===yest ? state.stats.streak+1 : 1);
     state.stats.lastDate = t;
   }
-  // mark task done if completed by time
   if(state.activeTaskId){
     const task = state.tasks.find(x=>x.id===state.activeTaskId);
     if(task){ task.pomodoros = (task.pomodoros||0)+1; }
   }
-  addToForest({minutes, dead:false, species:currentSpecies, seed:currentTreeSeed});
-  toast('🌳 Your tree is now part of the grove');
+  const wilt = wiltFraction();
+  const treeRec = addToForest({
+    minutes, dead:false, species:currentSpecies, seed:currentTreeSeed,
+    distractions:sessionDistractions, intent:sessionIntent, wilt,
+  });
+  toast(wilt>0.4 ? '🍂 A bit wilted, but planted' : '🌳 Your tree is now part of the grove');
   checkAchievements();
   renderHeatmap();
+  renderWeek();
+  if(state.settings.askReflection){
+    openReflection(treeRec);
+  } else {
+    nextMode();
+  }
 }
 function nextMode(){
   let next;
@@ -1523,10 +1853,16 @@ function addToForest(opts){
     dead: !!opts.dead,
     species: opts.species,
     seed: opts.seed,
+    intent: opts.intent || '',
+    distractions: opts.distractions || 0,
+    wilt: opts.wilt || 0,
+    rating: opts.rating || 0,
+    reflection: opts.reflection || '',
   };
   state.forest.unshift(item);
   if(state.forest.length>240) state.forest.length=240;
   save();
+  return item;
 }
 
 function renderTree(frac){
@@ -1534,6 +1870,8 @@ function renderTree(frac){
   if(frac<.04) stage=0; else if(frac<.18) stage=1; else if(frac<.4) stage=2;
   else if(frac<.65) stage=3; else if(frac<.95) stage=4; else stage=5;
   els.treeSvg.innerHTML = renderTreeSVG(currentTree, frac);
+  const wilt = wiltFraction();
+  els.treeSvg.classList.toggle('wilted', wilt>0.15);
   if(running){
     const msgs = [
       '🌱 Seed in the soil…',
@@ -1544,6 +1882,15 @@ function renderTree(frac){
       '🌸 In full bloom. Almost done!'
     ];
     els.treeStatus.textContent = msgs[stage];
+  } else if(mode==='focus' && pausedAt){
+    const grace = (state.settings.pauseGrace||0)*1000;
+    const p = pausedTotal + (Date.now()-pausedAt);
+    if(p<=grace){
+      const left = Math.ceil((grace-p)/1000);
+      els.treeStatus.textContent = `⏸ Paused · ${left}s grace`;
+    } else {
+      els.treeStatus.textContent = '🍂 The tree is wilting…';
+    }
   }
 }
 function renderTreeIdle(){
@@ -1564,11 +1911,20 @@ function renderGrove(){
   }
   state.forest.forEach(t=>{
     const d = document.createElement('div');
-    d.className = 'grove-tree' + (t.dead?' dead':'');
+    d.className = 'grove-tree' + (t.dead?' dead':'') + ((t.wilt||0)>0.15?' wilted':'');
+    if((t.wilt||0)>0.15) d.style.filter = `saturate(${1-(t.wilt*0.6).toFixed(2)}) brightness(${1-(t.wilt*0.2).toFixed(2)})`;
     const date = new Date(t.ts);
+    const rating = t.rating ? ('★'.repeat(t.rating)+'☆'.repeat(5-t.rating)) : '';
+    const lines = [
+      `${escapeHTML(t.label)} · ${t.minutes}m · ${date.toLocaleDateString()}`,
+      t.intent ? `“${escapeHTML(t.intent)}”` : '',
+      rating || '',
+      t.reflection ? escapeHTML(t.reflection) : '',
+      t.distractions ? `${t.distractions} distraction${t.distractions>1?'s':''}` : '',
+    ].filter(Boolean).join('<br>');
     d.innerHTML = `
-      <svg viewBox="0 0 360 360">${renderGroveTreeSVG(t.species||'oak', t.seed||t.ts, t.dead)}</svg>
-      <div class="tip">${escapeHTML(t.label)} · ${t.minutes}m · ${date.toLocaleDateString()}</div>
+      <svg viewBox="0 0 360 360" aria-hidden="true">${renderGroveTreeSVG(t.species||'oak', t.seed||t.ts, t.dead)}</svg>
+      <div class="tip" style="max-width:240px;white-space:normal;text-align:center">${lines}</div>
     `;
     g.appendChild(d);
   });
@@ -1643,6 +1999,9 @@ const ACHIEVEMENTS = [
   {id:'early', icon:'🌅', name:'Early Bird', desc:'Focus before 7 AM', test:s=>s.forest.some(t=>!t.dead && new Date(t.ts).getHours()<7)},
   {id:'night', icon:'🌙', name:'Night Owl', desc:'Focus after 10 PM', test:s=>s.forest.some(t=>!t.dead && new Date(t.ts).getHours()>=22)},
   {id:'variety', icon:'🌈', name:'Variety', desc:'Plant 3 different species', test:s=>{ const set=new Set(s.forest.filter(t=>!t.dead).map(t=>t.species)); return set.size>=3; }},
+  {id:'reflect', icon:'📓', name:'Mindful', desc:'Write 5 session reflections', test:s=>s.forest.filter(t=>t.reflection && t.reflection.length>0).length>=5},
+  {id:'undistracted', icon:'🎯', name:'Laser Focus', desc:'Finish a session with 0 distractions', test:s=>s.forest.some(t=>!t.dead && t.distractions===0 && t.minutes>=20)},
+  {id:'maple', icon:'🍁', name:'Autumn', desc:'Plant a maple', test:s=>s.forest.some(t=>!t.dead && t.species==='maple')},
 ];
 function checkAchievements(){
   let unlocked=null;
@@ -1684,10 +2043,19 @@ function renderTasks(){
   for(const t of list){
     const d = document.createElement('div');
     d.className = 'task' + (t.done?' done':'') + (t.id===state.activeTaskId && !t.done?' active':'');
+    let estPart = '';
+    if(t.estPomos){
+      const done = Math.min(t.pomodoros||0, t.estPomos);
+      const complete = (t.pomodoros||0) >= t.estPomos;
+      estPart = `<span class="est ${complete?'done':''}" title="${t.pomodoros||0} done of ${t.estPomos} planned">${done}/${t.estPomos}🌱</span>`;
+    } else if(t.pomodoros){
+      estPart = `<span class="est">${t.pomodoros}🌱</span>`;
+    }
     d.innerHTML = `
-      <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
-      <div class="label">${escapeHTML(t.label)}${t.pomodoros?` <span style="color:var(--ink-dim);font-size:11px">· ${t.pomodoros}🌱</span>`:''}</div>
-      <button class="del" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg></button>
+      <div class="check" role="button" aria-label="Mark task done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></div>
+      <div class="label">${escapeHTML(t.label)}</div>
+      ${estPart}
+      <button class="del" title="Delete" aria-label="Delete task"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg></button>
     `;
     d.querySelector('.check').addEventListener('click', e=>{
       e.stopPropagation();
@@ -1712,10 +2080,12 @@ function renderTasks(){
 function addTask(){
   const v = els.taskInput.value.trim();
   if(!v) return;
-  const t = { id:Date.now()+'_'+Math.random().toString(36).slice(2,6), label:v, done:false, pomodoros:0, created:Date.now() };
+  const estVal = parseInt(els.taskEst.value, 10);
+  const estPomos = (Number.isFinite(estVal) && estVal>0) ? Math.min(20, estVal) : 0;
+  const t = { id:Date.now()+'_'+Math.random().toString(36).slice(2,6), label:v, done:false, pomodoros:0, estPomos, created:Date.now() };
   state.tasks.unshift(t);
   if(!state.activeTaskId) state.activeTaskId = t.id;
-  els.taskInput.value='';
+  els.taskInput.value=''; els.taskEst.value='';
   save(); renderTasks(); render();
 }
 
@@ -1756,10 +2126,15 @@ function makeNoiseBuffer(ctx, type){
   }
   return buf;
 }
+function trackVolume(id){
+  const mix = state.soundMix[id];
+  const perTrack = (typeof mix==='number') ? mix : 1;
+  return state.settings.volume * perTrack;
+}
 function startSound(id){
   const ctx = getCtx();
   const out = ctx.createGain();
-  out.gain.value = state.settings.volume;
+  out.gain.value = trackVolume(id);
   out.connect(ctx.destination);
 
   let stop = ()=>{};
@@ -1896,20 +2271,32 @@ function toggleSound(id){
   renderSounds();
 }
 function updateVolume(){
-  Object.values(activeSounds).forEach(s=>{ if(s.gain) s.gain.gain.value = state.settings.volume; });
+  Object.entries(activeSounds).forEach(([id,s])=>{ if(s.gain) s.gain.gain.value = trackVolume(id); });
 }
 function renderSounds(){
   els.soundsGrid.innerHTML = SOUNDS.map(s=>{
     const on = !!activeSounds[s.id];
-    return `<button class="sound ${on?'on':''}" data-id="${s.id}">
-      <span class="ic">${s.ic}</span>
+    const mix = (typeof state.soundMix[s.id]==='number') ? state.soundMix[s.id] : 1;
+    return `<div class="sound ${on?'on':''}" data-id="${s.id}" role="group" aria-label="${s.name}">
+      <span class="ic" aria-hidden="true">${s.ic}</span>
       <span>${s.name}</span>
-    </button>`;
+      <input type="range" class="smix" data-id="${s.id}" min="0" max="100" value="${Math.round(mix*100)}" aria-label="${s.name} volume" title="${s.name} volume"/>
+    </div>`;
   }).join('');
 }
 els.soundsGrid.addEventListener('click', e=>{
+  if(e.target.classList.contains('smix')) return;
   const b = e.target.closest('.sound'); if(!b) return;
   toggleSound(b.dataset.id);
+});
+els.soundsGrid.addEventListener('input', e=>{
+  const r = e.target.closest('.smix'); if(!r) return;
+  const id = r.dataset.id;
+  state.soundMix[id] = parseInt(r.value,10)/100;
+  save();
+  if(activeSounds[id] && activeSounds[id].gain){
+    activeSounds[id].gain.gain.value = trackVolume(id);
+  }
 });
 
 // ============== CHIME / NOTIFY ==============
@@ -1959,6 +2346,230 @@ function toggleFocusMode(force){
   els.focusMode.classList.toggle('on', on);
 }
 
+// ============== INTENT / REFLECTION / HELP MODALS ==============
+function openModal(m){ m.classList.add('show'); }
+function closeModal(m){ m.classList.remove('show'); }
+function anyModalOpen(){
+  return [els.intentModal, els.reflectModal, els.helpModal].some(m=>m.classList.contains('show'));
+}
+
+function openIntent(){
+  const cur = activeTaskLabel();
+  els.intentText.value = cur || '';
+  openModal(els.intentModal);
+  setTimeout(()=>els.intentText.focus(), 60);
+}
+function confirmIntent(use){
+  sessionIntent = use ? els.intentText.value.trim() : '';
+  closeModal(els.intentModal);
+  actuallyStart();
+}
+
+let pendingReflectionTree = null;
+let pendingRating = 0;
+function openReflection(treeRec){
+  pendingReflectionTree = treeRec;
+  pendingRating = 0;
+  els.reflectText.value = '';
+  [...els.reflectRating.children].forEach(b=>b.classList.remove('on'));
+  const wilt = (treeRec && treeRec.wilt)||0;
+  els.reflectSub.textContent = wilt>0.4
+    ? 'A bit wilted — how did that session feel?'
+    : 'How did that session feel?';
+  openModal(els.reflectModal);
+}
+function saveReflection(){
+  if(pendingReflectionTree){
+    pendingReflectionTree.rating = pendingRating;
+    pendingReflectionTree.reflection = els.reflectText.value.trim();
+    save();
+    renderGrove();
+  }
+  pendingReflectionTree = null;
+  closeModal(els.reflectModal);
+  nextMode();
+}
+function skipReflection(){
+  pendingReflectionTree = null;
+  closeModal(els.reflectModal);
+  nextMode();
+}
+
+// ============== DISTRACTION ==============
+function markDistraction(){
+  if(!running || mode!=='focus') return;
+  sessionDistractions++;
+  els.distractBtn.classList.remove('flash');
+  void els.distractBtn.offsetWidth;
+  els.distractBtn.classList.add('flash');
+  els.distractCount.textContent = sessionDistractions;
+}
+
+// ============== NOTIFY ON START ==============
+function notifySessionStart(){
+  if(!state.settings.notify) return;
+  if(!('Notification' in window)) return;
+  if(Notification.permission!=='granted') return;
+  if(!document.hidden) return;
+  if(mode!=='focus') return;
+  const body = sessionIntent ? `Focusing on: ${sessionIntent}` : 'A new tree is growing 🌱';
+  try{ new Notification('Grove · session started', {body, silent:true}); }catch(e){}
+}
+
+// ============== WEEKLY SUMMARY ==============
+function renderWeek(){
+  const today = new Date();
+  const days = [];
+  let total = 0, sessions = 0, bestDay = {key:null, m:0};
+  const hourBuckets = new Array(24).fill(0);
+  const taskMins = {};
+  for(let i=6;i>=0;i--){
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    const k = localDateStr(d);
+    const m = state.daily[k]||0;
+    total += m;
+    if(m>bestDay.m){ bestDay = {key:k, m, date:d}; }
+    days.push({key:k, m});
+  }
+  state.forest.forEach(t=>{
+    if(t.dead) return;
+    const d = new Date(t.ts);
+    const daysAgo = Math.floor((Date.now()-d.setHours(0,0,0,0))/(24*3600*1000));
+    if(daysAgo<7){
+      sessions++;
+      const hour = new Date(t.ts).getHours();
+      hourBuckets[hour] += t.minutes;
+      const lbl = t.label || 'Focus session';
+      taskMins[lbl] = (taskMins[lbl]||0) + t.minutes;
+    }
+  });
+  let bestHour = -1, bestHourMins = 0;
+  hourBuckets.forEach((m,h)=>{ if(m>bestHourMins){ bestHourMins=m; bestHour=h; } });
+  let topTask = '—', topTaskMins = 0;
+  Object.entries(taskMins).forEach(([k,v])=>{ if(v>topTaskMins){ topTask=k; topTaskMins=v; } });
+  const distract = state.forest.filter(t=>!t.dead && (Date.now()-t.ts)<7*24*3600*1000)
+    .reduce((acc,t)=>acc+(t.distractions||0), 0);
+  const avgPerSession = sessions>0 ? (distract/sessions).toFixed(1) : '0.0';
+  const fmtHour = h=>{
+    if(h<0) return '—';
+    const ap = h<12 ? 'am' : 'pm';
+    const hh = ((h+11)%12)+1;
+    return `${hh}${ap}`;
+  };
+  const fmtBestDay = bestDay.date ? bestDay.date.toLocaleDateString(undefined,{weekday:'short'}) : '—';
+  els.weekGrid.innerHTML = `
+    <div class="week-stat"><div class="l">Total</div><div class="v">${total}<small style="font-size:13px;color:var(--ink-dim);margin-left:2px">m</small></div><div class="s">${sessions} session${sessions===1?'':'s'}</div></div>
+    <div class="week-stat"><div class="l">Best day</div><div class="v">${fmtBestDay}</div><div class="s">${bestDay.m} min</div></div>
+    <div class="week-stat"><div class="l">Best hour</div><div class="v">${fmtHour(bestHour)}</div><div class="s">${bestHourMins} min</div></div>
+    <div class="week-stat"><div class="l">Top task</div><div class="v" style="font-size:16px">${escapeHTML(topTask).slice(0,28)}</div><div class="s">${topTaskMins} min</div></div>
+    <div class="week-stat"><div class="l">Distractions</div><div class="v">${distract}</div><div class="s">${avgPerSession} / session</div></div>
+  `;
+}
+
+// ============== DAY/NIGHT + SEASON ==============
+function applyDayNight(){
+  const root = document.body;
+  if(!state.settings.dayNight){
+    root.style.removeProperty('--bg-1');
+    root.style.removeProperty('--bg-2');
+    root.style.removeProperty('--bg-top-1');
+    root.style.removeProperty('--bg-top-2');
+    return;
+  }
+  if(document.body.classList.contains('mode-break') || document.body.classList.contains('mode-long')){
+    return; // mode-specific colors take over
+  }
+  const h = new Date().getHours();
+  const m = new Date().getMonth(); // 0-11
+  // Time-of-day palettes
+  let bg1, bg2, top1, top2;
+  if(h>=5 && h<8){ // dawn
+    bg1 = '#1f2840'; bg2 = '#3a3548'; top1 = '#e8a87c'; top2 = '#6a8aa8';
+  } else if(h>=8 && h<17){ // day
+    bg1 = '#1a3a2c'; bg2 = '#27513f'; top1 = '#4d8e6e'; top2 = '#7ec8a0';
+  } else if(h>=17 && h<20){ // dusk
+    bg1 = '#2a1f2e'; bg2 = '#3e2a3a'; top1 = '#d27a5a'; top2 = '#8a5e8c';
+  } else { // night
+    bg1 = '#0f1d18'; bg2 = '#1a2e25'; top1 = '#2d5f49'; top2 = '#2a3f57';
+  }
+  // Seasonal tint shift (very subtle)
+  // 0=winter (cool), 1=spring, 2=summer, 3=autumn
+  const season = ((m+1)%12)<3 ? 0 : (m<6 ? 1 : (m<9 ? 2 : 3));
+  if(season===3){ top1 = mixHex(top1, '#c47a4a', 0.4); }
+  if(season===0){ top1 = mixHex(top1, '#8ab8d0', 0.3); bg2 = mixHex(bg2, '#3a4858', 0.2); }
+  root.style.setProperty('--bg-1', bg1);
+  root.style.setProperty('--bg-2', bg2);
+  root.style.setProperty('--bg-top-1', top1);
+  root.style.setProperty('--bg-top-2', top2);
+}
+function mixHex(a,b,t){
+  const pa = a.replace('#',''), pb = b.replace('#','');
+  const ai = parseInt(pa,16), bi = parseInt(pb,16);
+  const ar=(ai>>16)&255, ag=(ai>>8)&255, ab=ai&255;
+  const br=(bi>>16)&255, bg=(bi>>8)&255, bb=bi&255;
+  const r = Math.round(ar+(br-ar)*t);
+  const g = Math.round(ag+(bg-ag)*t);
+  const b_ = Math.round(ab+(bb-ab)*t);
+  return '#'+((1<<24)|(r<<16)|(g<<8)|b_).toString(16).slice(1);
+}
+
+// ============== EXPORT / IMPORT ==============
+function exportData(){
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `grove-${date}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  toast('🌳 Grove exported');
+}
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data || typeof data!=='object') throw new Error('bad');
+      if(!confirm('Replace current data with imported grove? This cannot be undone.')) return;
+      const merged = {
+        ...structuredClone(defaults),
+        ...data,
+        settings:{...defaults.settings,...(data.settings||{})},
+        stats:{...defaults.stats,...(data.stats||{})},
+        forest:data.forest||[],
+        tasks:data.tasks||[],
+        achievements:data.achievements||{},
+        daily:data.daily||{},
+        soundMix:data.soundMix||{},
+      };
+      state = merged;
+      save();
+      applySettingsToUI();
+      renderTasks(); renderGrove(); renderStats(); renderHeatmap(); renderAchievements(); renderWeek(); renderSounds();
+      setMode('focus');
+      applyDayNight();
+      toast('✅ Grove imported');
+    }catch(err){
+      toast('❌ Could not read that file');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============== HELP MODAL ==============
+function toggleHelp(force){
+  const on = force!==undefined ? force : !els.helpModal.classList.contains('show');
+  els.helpModal.classList.toggle('show', on);
+}
+
+// ============== REDUCED MOTION ==============
+function applyReducedMotion(){
+  const on = !!state.settings.reducedMotion;
+  document.body.classList.toggle('reduced-motion', on);
+}
+
 // ============== EVENT WIRING ==============
 els.startBtn.addEventListener('click', ()=>{ running?pause():start(); });
 els.startBtnXL.addEventListener('click', ()=>{ running?pause():start(); });
@@ -1975,6 +2586,41 @@ els.modeSwitch.addEventListener('click', e=>{
   const b = e.target.closest('button'); if(!b) return;
   if(running){ if(!confirm('Stop the current session and switch?')) return; reset(); }
   setMode(b.dataset.mode);
+});
+
+// Distraction button
+els.distractBtn.addEventListener('click', markDistraction);
+
+// Help modal
+els.helpBtn.addEventListener('click', ()=>toggleHelp(true));
+els.helpClose.addEventListener('click', ()=>toggleHelp(false));
+els.helpModal.addEventListener('click', e=>{ if(e.target===els.helpModal) toggleHelp(false); });
+
+// Intent modal
+els.intentGo.addEventListener('click', ()=>confirmIntent(true));
+els.intentSkip.addEventListener('click', ()=>confirmIntent(false));
+els.intentText.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); confirmIntent(true); }
+  else if(e.key==='Escape'){ confirmIntent(false); }
+});
+
+// Reflection modal
+els.reflectRating.addEventListener('click', e=>{
+  const b = e.target.closest('button[data-r]'); if(!b) return;
+  pendingRating = parseInt(b.dataset.r,10);
+  [...els.reflectRating.children].forEach(x=>x.classList.toggle('on', x===b));
+});
+els.reflectSave.addEventListener('click', saveReflection);
+els.reflectSkip.addEventListener('click', skipReflection);
+els.reflectModal.addEventListener('click', e=>{ if(e.target===els.reflectModal) skipReflection(); });
+
+// Export / Import
+els.exportBtn.addEventListener('click', exportData);
+els.importBtn.addEventListener('click', ()=>els.importFile.click());
+els.importFile.addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0];
+  if(f) importData(f);
+  els.importFile.value = '';
 });
 els.tabs.addEventListener('click', e=>{
   const b = e.target.closest('button.tab'); if(!b) return;
@@ -2001,7 +2647,24 @@ function applySettingsToUI(){
   els.setAutoFocus.classList.toggle('on', state.settings.autoFocus);
   els.setSound.classList.toggle('on', state.settings.sound);
   els.setNotify.classList.toggle('on', state.settings.notify);
-  els.setSpecies.value = state.settings.species;
+  els.setReducedMotion.classList.toggle('on', state.settings.reducedMotion);
+  els.setDayNight.classList.toggle('on', state.settings.dayNight);
+  els.setAskIntent.classList.toggle('on', state.settings.askIntent);
+  els.setAskReflection.classList.toggle('on', state.settings.askReflection);
+  els.setPauseGrace.value = state.settings.pauseGrace;
+  // Mark locked species in dropdown
+  [...els.setSpecies.options].forEach(opt=>{
+    const v = opt.value;
+    if(v==='auto'){ opt.disabled = false; return; }
+    opt.disabled = !speciesUnlocked(v);
+  });
+  if(els.setSpecies.options[els.setSpecies.selectedIndex] &&
+     els.setSpecies.options[els.setSpecies.selectedIndex].disabled){
+    els.setSpecies.value = 'auto';
+    state.settings.species = 'auto';
+  } else {
+    els.setSpecies.value = state.settings.species;
+  }
   els.vol.value = Math.round(state.settings.volume*100);
 }
 function bindNum(el,key,min,max,opts={}){
@@ -2018,6 +2681,7 @@ bindNum(els.setShort,'short',1,60,{affectsTimer:true});
 bindNum(els.setLong,'long',1,60,{affectsTimer:true});
 bindNum(els.setCycle,'cycle',2,8);
 bindNum(els.setGoal,'goal',10,600);
+bindNum(els.setPauseGrace,'pauseGrace',0,600);
 els.setGoal.addEventListener('change', renderStats);
 
 // Quick presets
@@ -2037,13 +2701,23 @@ els.presets.addEventListener('click', e=>{
   }
   render();
 });
-const toggleBinding = (el,key)=>{ el.addEventListener('click', ()=>{ state.settings[key]=!state.settings[key]; el.classList.toggle('on', state.settings[key]); save(); }); };
+const toggleBinding = (el,key,onChange)=>{ el.addEventListener('click', ()=>{ state.settings[key]=!state.settings[key]; el.classList.toggle('on', state.settings[key]); save(); if(onChange) onChange(); }); };
 toggleBinding(els.setAutoBreak,'autoBreak');
 toggleBinding(els.setAutoFocus,'autoFocus');
 toggleBinding(els.setSound,'sound');
 toggleBinding(els.setNotify,'notify');
+toggleBinding(els.setReducedMotion,'reducedMotion', applyReducedMotion);
+toggleBinding(els.setDayNight,'dayNight', applyDayNight);
+toggleBinding(els.setAskIntent,'askIntent');
+toggleBinding(els.setAskReflection,'askReflection');
 els.setSpecies.addEventListener('change', ()=>{
-  state.settings.species = els.setSpecies.value; save();
+  const v = els.setSpecies.value;
+  if(v!=='auto' && !speciesUnlocked(v)){
+    toast('That species is still locked');
+    els.setSpecies.value = state.settings.species;
+    return;
+  }
+  state.settings.species = v; save();
   if(!running){ regenTree(); renderTreeIdle(); }
 });
 els.vol.addEventListener('input', ()=>{
@@ -2064,12 +2738,27 @@ els.taskInput.addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); })
 
 // Keyboard
 document.addEventListener('keydown', e=>{
-  if(document.activeElement && (document.activeElement.tagName==='INPUT' || document.activeElement.tagName==='SELECT' || document.activeElement.tagName==='TEXTAREA')) return;
+  // Allow Esc to close modals globally
+  if(e.key==='Escape'){
+    if(els.helpModal.classList.contains('show')){ toggleHelp(false); return; }
+    if(els.intentModal.classList.contains('show')){ confirmIntent(false); return; }
+    if(els.reflectModal.classList.contains('show')){ skipReflection(); return; }
+    if(els.focusMode.classList.contains('on')){ toggleFocusMode(false); return; }
+  }
+  // Ignore typing in inputs
+  const inField = document.activeElement && ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName);
+  if(inField) return;
+  // Don't fire shortcuts while modals are open (text was already typed)
+  if(anyModalOpen()) return;
   if(e.code==='Space'){ e.preventDefault(); running?pause():start(); }
   else if(e.key==='r' || e.key==='R'){ reset(); }
   else if(e.key==='s' || e.key==='S'){ skip(); }
   else if(e.key==='f' || e.key==='F'){ toggleFocusMode(); }
-  else if(e.key==='Escape' && els.focusMode.classList.contains('on')){ toggleFocusMode(false); }
+  else if(e.key==='d' || e.key==='D'){ markDistraction(); }
+  else if(e.key==='?'){ e.preventDefault(); toggleHelp(); }
+  else if(e.key==='1'){ if(!running) setMode('focus'); }
+  else if(e.key==='2'){ if(!running) setMode('short'); }
+  else if(e.key==='3'){ if(!running) setMode('long'); }
 });
 
 // Page lifecycle: if hidden during a focus session, keep ticking via timestamp end
@@ -2082,6 +2771,7 @@ document.addEventListener('visibilitychange', ()=>{
 });
 
 // ============== INIT ==============
+applyReducedMotion();
 applySettingsToUI();
 setMode('focus');
 renderTreeIdle();
@@ -2091,8 +2781,19 @@ renderStats();
 renderHeatmap();
 renderAchievements();
 renderSounds();
+renderWeek();
+applyDayNight();
+setInterval(applyDayNight, 5*60*1000);
+// Tick paused status so grace countdown updates
+setInterval(()=>{ if(!running && pausedAt && mode==='focus') render(); }, 1000);
 render();
 checkAchievements();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
 
 })();
 </script>
