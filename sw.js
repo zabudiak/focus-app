@@ -1,4 +1,4 @@
-const CACHE = 'grove-v1';
+const CACHE = 'grove-v3';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './og.svg'];
 
 self.addEventListener('install', e => {
