@@ -89,6 +89,7 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 
 - [Reply voice calibration](feedback_reply_voice_calibration.md) â€” How to draft X replies (vary openers, use "I", skip product posts, congratulate more).
 - [Post voice calibration](feedback_post_voice_calibration.md) — POST voice shifting to Objection-first (keep+grow); anchor every post in a lived specific; variety = builds + agency only; confirmed real client numbers; from 2026-06-17 analytics.
+- [X post advice lane](feedback_x_post_advice_lane.md) — Additive calibration: use advice-led/rant-teardown style for ~30% of X post drafts, with concrete rules, offer mechanics, and practical examples.
 - [Post first-person "I"](feedback_post_first_person_i.md) — Draft X posts in "I" not "we" (from 2026-06-13); hardened 2026-06-17 to NO we/us/our at all; overrides the I/we line + "We run..." examples in Twitter CLAUDE.md.
 - [Allocate long posts](feedback_allocate_long_posts.md) — Every X draft batch needs a share of long-form posts (default ~30%); over 500 chars is fine, don't trim to clear 280.
 - [No "Most agencies X" opener](feedback_no_most_agencies_opener.md) — Never lead a post with "Most agencies/people/founders think X"; vary openers, use direct/number/you-led first lines.
