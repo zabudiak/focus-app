@@ -85,6 +85,7 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 
 - [Organisation obsessed](feedback_organisation_obsessed.md) — Default to typed folder layouts, versioned naming, archive-not-delete, and a RENAME_LOG on any reorg.
 - [md2html tool](project_md2html_tool.md) — Run `_tools/md2html.py <file.md>` to render markdown to styled HTML + open in Chrome; use whenever he asks to "put this in HTML".
+- [X Article HTML = semantic tags](feedback_x_article_html_semantic.md) — Article HTML he pastes into X must use h2/blockquote/ul (not styled <p>); Draft.js maps by tag not CSS.
 - [Daily planner + Schedule Brain](project_daily_planner.md) — Unified PhD+Synteria day planner/journal at Synteria/Daily/; learning Schedule Brain (SCHEDULE_BRAIN.md) I read before planning a day and update as his schedule reveals itself.
 
 - [Reply voice calibration](feedback_reply_voice_calibration.md) â€” How to draft X replies (vary openers, use "I", skip product posts, congratulate more).
@@ -121,3 +122,4 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 - [PhD Daily Notebook](project_phd_daily_notebook.md) — auto-record the day's plan as HTML whenever Zaid asks "what's my plan today" in `_phd/`; folder `Daily Notebook/`, trigger also in `_phd/CLAUDE.md`.
 - [PhD cell splitting schedule](project_phd_cell_splitting.md) — HeLa/U2OS/HEK split Mon/Wed/Fri; ratio by gap (normal 2-day vs weekend 3-day); fold into split-day daily plans.
 - [PhD protocols are HTML](project_phd_protocols_html.md) — `_phd/Protocols/` authored as HTML in the Daily-Notebook format (link `Protocols/style.css`); md originals archived; faithful conversion only, no new markdown protocols.
+- [OOO → Interested reactivation](feedback_ooo_reactivate.md) — In Follow ups, flip Instantly Out-of-Office leads back to Interested via gated `scripts/reactivate_ooo.py` (2nd sanctioned write path); confirm scope (all vs genuinely-engaged).
