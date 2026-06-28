@@ -85,7 +85,13 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 
 - [Organisation obsessed](feedback_organisation_obsessed.md) — Default to typed folder layouts, versioned naming, archive-not-delete, and a RENAME_LOG on any reorg.
 - [md2html tool](project_md2html_tool.md) — Run `_tools/md2html.py <file.md>` to render markdown to styled HTML + open in Chrome; use whenever he asks to "put this in HTML".
+- [Open links encoded](feedback_open_links_encoded.md) — Always open local files via `_tools/open_in_chrome.py` so spaced paths (e.g. "Social Media") don't split the link.
 - [X Article HTML = semantic tags](feedback_x_article_html_semantic.md) — Article HTML he pastes into X must use h2/blockquote/ul (not styled <p>); Draft.js maps by tag not CSS.
+- [Articles use contractions](feedback_articles_use_contractions.md) — Always write don't/I've/I'm/it's, never "do not"/"I have"; uncontracted forms are the #1 AI tell, worst in articles.
+- [Spoken-voice tweaks](feedback_spoken_voice_tweaks.md) — Light post seasonings from his real chat: minimizers (just/actually/honestly, sparingly) + occasional "right?" + varied list endings; NEVER name a client. Rejected: self-correction, profanity, txt-speak.
+- [Post examples gallery](feedback_post_examples_gallery.md) — Draft short X posts from Social Media/tone/post-examples.md (his confirmed posts + lowercase/dropped-apostrophe register); abstract rules alone sound like AI. Add approved batches to the gallery.
+- [Humanizer = perplexity scorer](project_humanizer_perplexity.md) — BUILT at Social Media/humanizer/; `python score.py file.md` grades drafts vs his real-post gpt2 baseline (ON VOICE/TOO SMOOTH + /100). Run it against article drafts.
+- [Twitter drafts = HTML by default](feedback_twitter_drafts_html_default.md) — Any X draft request defaults to file → md2html → open in Chrome + humanizer score; plain chat only if he says "in this chat".
 - [Daily planner + Schedule Brain](project_daily_planner.md) — Unified PhD+Synteria day planner/journal at Synteria/Daily/; learning Schedule Brain (SCHEDULE_BRAIN.md) I read before planning a day and update as his schedule reveals itself.
 
 - [Reply voice calibration](feedback_reply_voice_calibration.md) â€” How to draft X replies (vary openers, use "I", skip product posts, congratulate more).
