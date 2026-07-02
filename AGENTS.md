@@ -104,6 +104,7 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 - [No "Most agencies X" opener](feedback_no_most_agencies_opener.md) — Never lead a post with "Most agencies/people/founders think X"; vary openers, use direct/number/you-led first lines.
 - [Steven Bartlett 3-part framework](feedback_steven_bartlett_framework.md) â€” Default frame for cold email lead-magnet posts (pattern-interrupt â†’ reciprocity â†’ reward); since 2026-06 the whole account is evolving SB-ward + articles, past analytics are reference not rules.
 - [Morning FU routine output format](feedback_morning_routine_output_format.md) â€” Per-client shape for `do <slug>` passes: minimal PRE-FLIGHT, #N draft blocks, SKIP w/ reason, one-liner hot inbox triage with action.
+- [Discord daily recap format](feedback_discord_daily_recap_format.md) — Generalized daily Discord recap uses Day N + Synteria/PhD/Personal sections; "regular habits" means multivitamins/omega 3/magnesium, creatine, 140g protein, skincare.
 - [Additive-only changes](feedback_additive_only_changes.md) â€” Never delete or restructure working Synteria systems; mirror/copy, add pointers, STATUS notes instead of archiving.
 - [Zaid operating profile](user_zaid_operating_profile.md) â€” Who he is to work with: terse voice-to-text founder, high-velocity, systems-thinker, domain-expert; profanity = frustration at wasted work, not hostility.
 - [Scope discipline](feedback_scope_discipline.md) â€” "Just make X" = ONLY X, standalone. Under-produce, never touch unrequested files/proposals/decks. Scope overrun is his #1 anger trigger.
@@ -129,3 +130,5 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 - [PhD cell splitting schedule](project_phd_cell_splitting.md) — HeLa/U2OS/HEK split Mon/Wed/Fri; ratio by gap (normal 2-day vs weekend 3-day); fold into split-day daily plans.
 - [PhD protocols are HTML](project_phd_protocols_html.md) — `_phd/Protocols/` authored as HTML in the Daily-Notebook format (link `Protocols/style.css`); md originals archived; faithful conversion only, no new markdown protocols.
 - [OOO → Interested reactivation](feedback_ooo_reactivate.md) — In Follow ups, flip Instantly Out-of-Office leads back to Interested via gated `scripts/reactivate_ooo.py` (2nd sanctioned write path); confirm scope (all vs genuinely-engaged).
+- [DV z-slice QC workflow](project_dv_zslice_qc_workflow.md) — TUBA4B/RAD51/RPA DDR experiment: all 10 conditions now 8-slice windows, visually-confirmed, projections done; some 16h/24h images flagged QC-soft.
+- [Bash + Windows path escaping bug](feedback_bash_windows_path_escaping.md) — Never mix `$var` with Windows backslash paths in double-quoted bash strings; use forward-slash paths or it silently no-ops.
