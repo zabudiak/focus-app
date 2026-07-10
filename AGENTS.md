@@ -84,6 +84,7 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 ﻿# Memory index
 
 - [Organisation obsessed](feedback_organisation_obsessed.md) — Default to typed folder layouts, versioned naming, archive-not-delete, and a RENAME_LOG on any reorg.
+- [Client email voice](feedback_client_email_voice.md) - Default personal client/prospect email voice: warm, direct, operator-led, one concrete update and a specific next step; canonical rules in `_doctrine/voice-zaid.md`.
 - [md2html tool](project_md2html_tool.md) — Run `_tools/md2html.py <file.md>` to render markdown to styled HTML + open in Chrome; use whenever he asks to "put this in HTML".
 - [Open links encoded](feedback_open_links_encoded.md) — Always open local files via `_tools/open_in_chrome.py` so spaced paths (e.g. "Social Media") don't split the link.
 - [X Article HTML = semantic tags](feedback_x_article_html_semantic.md) — Article HTML he pastes into X must use h2/blockquote/ul (not styled <p>); Draft.js maps by tag not CSS.
@@ -136,3 +137,4 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 - [DV z-slice QC workflow](project_dv_zslice_qc_workflow.md) — TUBA4B/RAD51/RPA DDR experiment: all 10 conditions now 8-slice windows, visually-confirmed, projections done; some 16h/24h images flagged QC-soft.
 - [Bash + Windows path escaping bug](feedback_bash_windows_path_escaping.md) — Never mix `$var` with Windows backslash paths in double-quoted bash strings; use forward-slash paths or it silently no-ops.
 - [Mentorship/community anchor](project_mentorship_community_anchor.md) — Zaid joined a cold email community early that changed his trajectory; objection-first stance = video-only courses are a scam, but community/feedback/accountability courses are worth it. Reusable X post anchor.
+- [Health evidence layer](project_health_evidence_layer.md) — Health/ now has cited evidence notes + TARGETS.md + a local dashboard (python dashboard/build_dashboard.py) built from reputable literature; private, not in root CLAUDE.md map.
