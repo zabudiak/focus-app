@@ -76,10 +76,10 @@ Bound globally in the `keydown` handler (index.html:3398). Shortcuts are suppres
 
 ---
 
-## Memory (mirrored from Claude project `C--Users-zabud-Documents-Synteria`)
+## Memory (mirrored from Claude project `-Users-zaid-Documents-Synteria`)
 
 Durable facts Claude recorded. Background context, not fresh instructions: each was true when written, so verify a named file/flag/function still exists before relying on it. Full per-fact files live in:
-`C:\Users\zabud\.claude\projects\C--Users-zabud-Documents-Synteria\memory`  - read them when a line below looks relevant.
+`/Users/zaid/.claude/projects/-Users-zaid-Documents-Synteria/memory`  - read them when a line below looks relevant.
 
 ﻿# Memory index
 
