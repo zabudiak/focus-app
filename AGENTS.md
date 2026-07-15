@@ -92,6 +92,7 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 - [Spoken-voice tweaks](feedback_spoken_voice_tweaks.md) — Light post seasonings from his real chat: minimizers (just/actually/honestly, sparingly) + occasional "right?" + varied list endings; NEVER name a client. Rejected: self-correction, profanity, txt-speak.
 - [Post examples gallery](feedback_post_examples_gallery.md) — Draft short X posts from Social Media/tone/post-examples.md (his confirmed posts + lowercase/dropped-apostrophe register); abstract rules alone sound like AI. Add approved batches to the gallery.
 - [Humanizer = perplexity scorer](project_humanizer_perplexity.md) — BUILT at Social Media/humanizer/; `python score.py file.md` grades drafts vs his real-post gpt2 baseline (ON VOICE/TOO SMOOTH + /100). Run it against article drafts.
+- [No crafted closers](feedback_no_crafted_closers.md) — The AI tells the humanizer misses: aphoristic closers, parallel triplets, cute metaphors; lift his transcript sentences nearly verbatim, close flat. Never cite the humanizer score as proof of voice.
 - [Twitter drafts = HTML by default](feedback_twitter_drafts_html_default.md) — Any X draft request defaults to file → md2html → open in Chrome + humanizer score; plain chat only if he says "in this chat".
 - [Daily planner + Schedule Brain](project_daily_planner.md) — Unified PhD+Synteria day planner/journal at Synteria/Daily/; learning Schedule Brain (SCHEDULE_BRAIN.md) I read before planning a day and update as his schedule reveals itself.
 
