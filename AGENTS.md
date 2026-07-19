@@ -84,6 +84,7 @@ Durable facts Claude recorded. Background context, not fresh instructions: each 
 ﻿# Memory index
 
 - [Wipe means Trash](feedback_wipe_means_trash.md) — "Wipe"/"delete"/"clear it" = move to macOS Trash, never permanent-delete; he empties Trash himself.
+- [Focus Watch](project_focus_watch.md) — Toggle-on menu bar screen watcher at Synteria/Focus Watch/; per-focus-block capture + evidence-lensed productivity briefs; portable build spec for a friend on Windows.
 - [Organisation obsessed](feedback_organisation_obsessed.md) — Default to typed folder layouts, versioned naming, archive-not-delete, and a RENAME_LOG on any reorg.
 - [Client email voice](feedback_client_email_voice.md) - Default personal client/prospect email voice: warm, direct, operator-led, one concrete update and a specific next step; canonical rules in `_doctrine/voice-zaid.md`.
 - [md2html tool](project_md2html_tool.md) — Run `_tools/md2html.py <file.md>` to render markdown to styled HTML + open in Chrome; use whenever he asks to "put this in HTML".
